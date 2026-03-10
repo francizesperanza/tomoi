@@ -8,6 +8,7 @@ body,
   font-family: "Kulim Park", sans-serif;
   font-weight: 400;
   font-style: normal;
+  --tomoi-yellow-l: #FFFAD4;
   --tomoi-yellow: #FFC64C;
   --tomoi-yellow-d: #DEA019;
   --tomoi-gray: #D9D9D9;
@@ -25,8 +26,6 @@ body,
 
 input[type="checkbox"] {
     appearance: none;
-    width: 2vh;
-    height: 2vh;
     border-radius: 5px;
     border: 1px solid #000;
     accent-color: var(--tomoi-yellow);
@@ -58,4 +57,14 @@ input[type="checkbox"]:checked::after {
   text-shadow: 
     2px 2px 3px rgba(230, 230, 230, 0.296),
     -2px -2px 3px rgba(0, 0, 0, 0);
+}
+
+.inset-text-shadow-alt{
+  background-color: #965d2498;
+  color: transparent;
+  -webkit-background-clip: text;
+  background-clip: text;
+  text-shadow: 
+    2px 2px 3px rgba(225, 186, 112, 0.299),
+    -2px -2px 3px rgba(172, 172, 172, 0);
 }
