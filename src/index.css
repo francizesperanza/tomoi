@@ -1,5 +1,61 @@
 @import "tailwindcss";
 
+html,
+body,
 :root {
-  
+  height: 100%;
+  width: 100%;
+  font-family: "Kulim Park", sans-serif;
+  font-weight: 400;
+  font-style: normal;
+  --tomoi-yellow: #FFC64C;
+  --tomoi-yellow-d: #DEA019;
+  --tomoi-gray: #D9D9D9;
+  --tomoi-gray-d: #b1b1b1;
+  --tomoi-gray-l: #e3e3e3;
+  --tomoi-green: #EAF2C4;
+  --tomoi-green-d: #B7C17B;
+}
+
+.alt-font {
+  font-family: "Kirang Haerang", system-ui;
+  font-weight: 400;
+  font-style: normal;
+}
+
+input[type="checkbox"] {
+    appearance: none;
+    width: 2vh;
+    height: 2vh;
+    border-radius: 5px;
+    border: 1px solid #000;
+    accent-color: var(--tomoi-yellow);
+}
+
+input[type="checkbox"]:checked {
+    background-color: var(--tomoi-yellow);
+}
+
+input[type="checkbox"]:hover {
+    background-color: var(--tomoi-yellow-d);
+}
+
+input[type="checkbox"]:checked::after {
+    content: "✓";
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 1.5vh;
+    color: #fff;
+    font-weight: 1000;
+}
+
+.inset-text-shadow{
+  background-color: #9d9d9d98;
+  color: transparent;
+  -webkit-background-clip: text;
+  background-clip: text;
+  text-shadow: 
+    2px 2px 3px rgba(230, 230, 230, 0.296),
+    -2px -2px 3px rgba(0, 0, 0, 0);
 }
