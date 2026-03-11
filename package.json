@@ -12,6 +12,7 @@
   "dependencies": {
     "@tailwindcss/forms": "^0.5.11",
     "@tailwindcss/vite": "^4.2.1",
+    "axios": "^1.13.6",
     "bootstrap-icons": "^1.13.1",
     "lucide-react": "^0.577.0",
     "react": "^19.2.0",
@@ -33,5 +34,18 @@
   },
   "overrides": {
     "vite": "^8.0.0-beta.13"
-  }
+  },
+  "description": "A journaling webapp built to make you consistent! Made with ReactJS, TailwindCSS, and MySQL",
+  "main": "eslint.config.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/francizesperanza/tomoi.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/francizesperanza/tomoi/issues"
+  },
+  "homepage": "https://github.com/francizesperanza/tomoi#readme"
 }
