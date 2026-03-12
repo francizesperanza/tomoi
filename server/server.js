@@ -39,9 +39,42 @@ app.post('/signup-user', (req, res) => {
     db.query(query, [username, email, password], (err, result) => {
         if (err) {
             console.error('Error inserting user:', err);
+
+            if (err.code === 'ER_DUP_ENTRY') {
+                return res.status(400).json({ error: 'Username or email already exists' });
+            }
+            
             res.status(500).json({ error: 'Error inserting user' });
         } else {
             res.status(201).json({ message: 'User created successfully' });
+        }
+    });
+});
+
+app.get('/check-username', (req, res) => {
+    const { username } = req.query;
+    const query = 'SELECT COUNT(*) AS count FROM users WHERE username = ?';
+    db.query(query, [username], (err, result) => {
+        if (err) {
+            console.error('Error checking username:', err);
+            res.status(500).json({ error: 'Error checking username' });
+        } else {
+            const isAvailable = result[0].count === 0;
+            res.json({ isAvailable });
+        }
+    });
+});
+
+app.get('/check-email', (req, res) => {
+    const { email } = req.query;
+    const query = 'SELECT COUNT(*) AS count FROM users WHERE email = ?';
+    db.query(query, [email], (err, result) => {
+        if (err) {
+            console.error('Error checking email:', err);
+            res.status(500).json({ error: 'Error checking email' });
+        } else {
+            const isAvailable = result[0].count === 0;
+            res.json({ isAvailable });
         }
     });
 });
