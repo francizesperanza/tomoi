@@ -2,9 +2,11 @@ import { useState } from 'react'
 import { Google } from 'react-bootstrap-icons'
 import { Link, useNavigate } from 'react-router-dom'
 import { toast} from 'react-hot-toast'
+import { useAuth } from './components/AuthProvider'
 
 function Login() {
   const navigate = useNavigate();
+  const {setUser} = useAuth();
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [rememberMe, setRememberMe] = useState(false)
@@ -30,7 +32,8 @@ function Login() {
               if (response.ok) {
                   toast.success(data.message);
                   setErrorMessage('');
-                  navigate('/login');
+                  setUser(data.user);
+                  navigate('/home');
               } else {
                   toast.error(data.error);
                   setErrorMessage(data.error);

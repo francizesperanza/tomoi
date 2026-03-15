@@ -68,3 +68,13 @@ input[type="checkbox"]:checked::after {
     2px 2px 3px rgba(225, 186, 112, 0.299),
     -2px -2px 3px rgba(172, 172, 172, 0);
 }
+
+
+.stroke-text{
+  font-size:100px;
+  text-align:center;
+  text-anchor:middle;
+  stroke:white;
+  stroke-width:3px;
+  fill:black;
+}

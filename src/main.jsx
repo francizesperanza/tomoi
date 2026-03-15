@@ -5,16 +5,25 @@ import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-d
 import './index.css'
 import Login from './Login.jsx'
 import SignUp from './SignUp.jsx'
+import Home from './Home.jsx'
+import PrivateRoute from './components/PrivateRoute.jsx'
+import AuthProvider from './components/AuthProvider.jsx'
 
 createRoot(document.getElementById('root')).render(
   <>
-    <Router>
-      <Routes>
-        <Route path="*" element={<Navigate replace to="/login" />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/signup" element={<SignUp />} />
-      </Routes>
-    </Router>
+    <AuthProvider>
+      <Router>
+        <Routes>
+          <Route path="*" element={<Navigate replace to="/login" />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<SignUp />} />
+          <Route path="/home" element={
+            <PrivateRoute>
+              <Home />
+            </PrivateRoute>}/>
+        </Routes>
+      </Router>
+    </AuthProvider>
     <Toaster />
   </>
   

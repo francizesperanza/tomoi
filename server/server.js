@@ -19,8 +19,8 @@ dotenv.config({
 app.use(session({
     secret: process.env.SESSION_SECRET,
     resave: false,
-    saveUninitialized: true,
-    cookie: { httpOnly: true, secure: false, maxAge: 7 * 24 * 60 * 60 * 1000 }
+    saveUninitialized: false,
+    cookie: { httpOnly: true, secure: false, sameSite: "lax", maxAge: 7 * 24 * 60 * 60 * 1000 }
 }));
 
 const saltRounds = parseInt(process.env.SALT_ROUNDS);
@@ -84,7 +84,7 @@ app.post('/login-user', (req, res) => {
                         res.status(500).json({ error: 'Error logging in' });
                     } else if (isMatch) {
                         req.session.user = { userID: result[0].userID, username: result[0].username, email: result[0].email };
-                        res.status(200).json({ message: 'Login successful' });
+                        res.status(200).json({ message: 'Login successful', user: req.session.user});
                     } else {
                         res.status(401).json({ error: 'Invalid username or password' });
                     }
@@ -123,3 +123,12 @@ app.get('/check-email', (req, res) => {
         }
     });
 });
+
+// AUTHENTICATION
+
+app.get('/session-check', (req, res) => {
+    if (!req.session.user)
+        return res.status(401).json({error: "User is not logged in."});
+
+    return res.json(req.session.user);
+})
