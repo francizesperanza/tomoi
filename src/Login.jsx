@@ -1,8 +1,45 @@
 import { useState } from 'react'
 import { Google } from 'react-bootstrap-icons'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
+import { toast} from 'react-hot-toast'
 
 function Login() {
+  const navigate = useNavigate();
+  const [username, setUsername] = useState('')
+  const [password, setPassword] = useState('')
+  const [rememberMe, setRememberMe] = useState(false)
+  const [errorMessage, setErrorMessage] = useState('')
+
+  const handleLogin = async (e) => {
+      e.preventDefault()
+
+      if (username.length === 0 || password.length === 0) {
+          toast.error('Please fill in all fields!');
+          return;
+      } else {
+          try {
+              const response = await fetch('http://localhost:8080/login-user', {
+                  method: 'POST',
+                  headers: {
+                      'Content-Type': 'application/json',
+                  },
+                  credentials: 'include',
+                  body: JSON.stringify({ username, password }),
+              });
+              const data = await response.json();
+              if (response.ok) {
+                  toast.success(data.message);
+                  setErrorMessage('');
+                  navigate('/login');
+              } else {
+                  toast.error(data.error);
+                  setErrorMessage(data.error);
+              }
+          } catch (error) {
+              alert('Error logging in user');
+          }
+      }
+  }
 
   return (
     <>
@@ -15,12 +52,12 @@ function Login() {
             <div className='alt-font text-5xl'>tomoi</div>
             <div className='text-xl'>Welcome back!</div>
           </div>
-          <form className='flex flex-col items-center justify-center items-center justify-center w-[50%] gap-5'>
+          <form className='flex flex-col items-center justify-center items-center justify-center w-[50%] gap-5' onSubmit={handleLogin}>
             <div className='flex flex-col items-center justify-center w-full gap-1'>
               <div className='flex font-black w-full'>
                 <label className='' htmlFor="username">Username</label>
               </div>
-              <input className='w-full rounded-xl bg-[var(--tomoi-gray)] py-2 px-4' type="text" id="username" name="username" />
+              <input className='w-full rounded-xl bg-[var(--tomoi-gray)] py-2 px-4' type="text" id="username" name="username" onChange={(e) => {setUsername(e.target.value)}}/>
             </div>
 
             <div className='flex flex-col items-center justify-center w-full gap-1'>
@@ -28,11 +65,15 @@ function Login() {
                 <label className='' htmlFor="password">Password</label>
                 <a className='ml-auto text-sm font-normal hover:text-[var(--tomoi-yellow)]' href="#">Forgot password?</a>
               </div>
-              <input className='w-full rounded-xl bg-[var(--tomoi-gray)] py-2 px-4' type="password" id="password" name="password" />
+              <input className='w-full rounded-xl bg-[var(--tomoi-gray)] py-2 px-4' type="password" id="password" name="password" onChange={(e) => {setPassword(e.target.value)}} />
+            </div>
+
+            <div className={'text-md text-center w-full' + ' text-red-500'}>
+              {errorMessage}
             </div>
 
             <div className='flex items-center w-full'>
-              <input type='checkbox' className='cursor-pointer w-[1em] h-[1em] shrink-0' id='remember' defaultValue={false} />
+              <input type='checkbox' className='cursor-pointer w-[1em] h-[1em] shrink-0' id='remember' defaultValue={false} onChange={(e) => {setRememberMe(e.target.checked)}} />
               <label className='ml-2' htmlFor="remember">Remember me next time</label>
             </div>
 

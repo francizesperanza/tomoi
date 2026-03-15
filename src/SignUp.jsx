@@ -1,7 +1,7 @@
-import { EyeIcon } from 'lucide-react'
+import { EyeIcon, EyeClosed} from 'lucide-react'
 import { useState } from 'react'
-import { Check, Eye, Google, Search } from 'react-bootstrap-icons'
-import { toast, Toaster } from 'react-hot-toast'
+import { Google } from 'react-bootstrap-icons'
+import { toast} from 'react-hot-toast'
 import { Link, useNavigate} from 'react-router-dom'
 
 function SignUp() {
@@ -49,7 +49,7 @@ function SignUp() {
     const passwordValid = checkPasswordValidity(password);
     const confirmPasswordValid = isPasswordMatch();
 
-    const handleSubmit = async (e) => {
+    const handleSignIn = async (e) => {
         e.preventDefault()
 
         if (!confirmPasswordValid) {
@@ -180,7 +180,7 @@ function SignUp() {
                     Login with Google
                 </button>
                 <div>- or -</div>
-                <form className='flex flex-col items-center justify-center items-center justify-center w-full gap-5' onSubmit={handleSubmit}>
+                <form className='flex flex-col items-center justify-center items-center justify-center w-full gap-5' onSubmit={handleSignIn}>
                     <div className='flex flex-col items-center justify-center w-full gap-1'>
                         <div className='flex font-black w-full items-center'>
                             <label className='' htmlFor="username">Username</label>
@@ -220,7 +220,7 @@ function SignUp() {
                                 checkPasswordValidity(e.target.value);
                             }} />
                             <button dir='rtl' className='border-dashed border-1 rounded-s-lg flex w-[20%] items-center justify-center cursor-pointer bg-[var(--tomoi-yellow-l)] hover:bg-[var(--tomoi-yellow)]' type='button' onClick={() => setIsPasswordVisible(!isPasswordVisible)}>
-                                <EyeIcon className='' width={20} height={20} />
+                                {isPasswordVisible ? <EyeIcon className='' width={20} height={20} /> : <EyeClosed className='' width={20} height={20} />}
                             </button>
                         </div>
                         <div className={'text-sm w-full' + (checkPasswordValidity(password) ? ' text-green-500' : ' text-red-500')}>
