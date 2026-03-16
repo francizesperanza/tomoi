@@ -11,7 +11,7 @@ function Home() {
     <>
         <Navbar></Navbar>
         <div className='flex flex-col min-h-dvh h-screen w-full overflow-y-auto bg-white justify-center items-center'>
-            <div className='flex w-full max-w-6xl h-[60%] items-stretch justify-center z-10 gap-4'>
+            <div className='flex w-full max-w-6xl h-[80%] items-stretch justify-center z-10 gap-4'>
                 <div className='flex flex-col bg-[var(--tomoi-gray)] rounded-xl w-[30%] items-center justify-center p-3'>
                     ha
                 </div>

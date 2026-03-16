@@ -18,9 +18,9 @@ function AuthProvider ({children}) {
                 })
                 const data = await response.json();
                 if (response.status == 401) {
-                    return response.json();
+                    setLoading(false);
+                    return data;
                 } else {
-                    console.log('authenticated!')
                     setUser(data);
                     setLoading(false);
                 }
