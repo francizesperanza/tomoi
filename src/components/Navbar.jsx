@@ -34,15 +34,15 @@ function Navbar() {
 
   return (
     <>
-      <div className='sticky top-0 w-full overflow-y-auto bg-transparent justify-center items-center z-20 pt-14 px-18'>
+      <div className='sticky top-0 w-full overflow-visible bg-transparent justify-center items-center z-20 pt-14 px-18'>
         <div className='flex'>
           <div className='flex'>
-            <div className='alt-font text-4xl rounded-full z-12 bg-[var(--tomoi-yellow)] px-8 py-2 stroked hover:bg-[var(--tomoi-yellow-d)]'>tomoi</div>
+            <div className='alt-font text-4xl rounded-full z-12 bg-[var(--tomoi-yellow)] px-8 py-2 stroked hover:bg-[var(--tomoi-yellow-d)] shadow-sm/30'>tomoi</div>
             {!isNavOpen ? 
-            <div className='bg-white -ml-18 flex items-center border-3 border-[var(--tomoi-gray-d)] rounded-full px-5 hover:border-black group' onClick={() => {collapseNav()}}>
+            <div className='bg-white -ml-18 flex items-center border-3 border-[var(--tomoi-gray-d)] rounded-full px-5 hover:border-black group shadow-sm/30' onClick={() => {collapseNav()}}>
               <List className='stroke-[var(--tomoi-gray-d)] ml-15 group-hover:stroke-black' width={30} height={30}></List>
             </div> :
-            <div className='bg-white -ml-18 gap-10 flex items-center border-3 border-black rounded-full px-5 pl-30 hover:border-black group'>
+            <div className='bg-white -ml-18 gap-10 flex items-center border-3 border-black rounded-full px-5 pl-30 hover:border-black group shadow-sm/30'>
               {menuButtons.map(({name, path},index) => (
                   <Link to={path} key={index} className='alt-font text-xl hover:text-[var(--tomoi-yellow)]'>{name}</Link>
               ))}
@@ -50,7 +50,7 @@ function Navbar() {
             </div>}
           </div>
             
-          <div className='bg-white gap-2 flex rounded-full font-bold text-lg items-center justify-center ml-auto border-3 px-4 cursor-pointer hover:bg-[var(--tomoi-gray-d)]'>
+          <div className='bg-white gap-2 flex rounded-full font-bold text-lg items-center justify-center ml-auto border-3 px-4 cursor-pointer hover:bg-[var(--tomoi-gray-d)] shadow-sm/30'>
             {user?.username ?? "unnamed"}
             <PersonCircle width={30} height={30}></PersonCircle>
           </div>
