@@ -94,7 +94,7 @@ function TomoiCalendar() {
 
   return (
     <>
-        <div className='flex flex-col w-full overflow-y-auto bg-white justify-center items-center rounded-xl p-4 gap-2'>
+        <div className='flex flex-col grow-2 w-full overflow-y-auto bg-white items-center rounded-xl p-4 gap-2'>
             <div className='flex gap-4 items-center justify-between w-full'>
                 <div className='text-3xl font-bold hover:underline cursor-pointer' onClick={(e) => openPopover(e)}>{currentDate.format('MMMM D, YYYY')}</div>
                 <div className='flex'>

@@ -37,7 +37,9 @@ function Navbar() {
       <div className='sticky top-0 w-full overflow-visible bg-transparent justify-center items-center z-20 pt-14 px-18'>
         <div className='flex'>
           <div className='flex'>
-            <div className='alt-font text-4xl rounded-full z-12 bg-[var(--tomoi-yellow)] px-8 py-2 stroked hover:bg-[var(--tomoi-yellow-d)] shadow-sm/30'>tomoi</div>
+            <div data-text="tomoi" className='alt-font text-4xl rounded-full z-12 bg-[var(--tomoi-yellow)] px-8 py-2 stroked hover:bg-[var(--tomoi-yellow-d)] shadow-sm/30'
+              style={{"--inside-color": 'black'}}>tomoi
+            </div>
             {!isNavOpen ? 
             <div className='bg-white -ml-18 flex items-center border-3 border-[var(--tomoi-gray-d)] rounded-full px-5 hover:border-black group shadow-sm/30' onClick={() => {collapseNav()}}>
               <List className='stroke-[var(--tomoi-gray-d)] ml-15 group-hover:stroke-black' width={30} height={30}></List>
