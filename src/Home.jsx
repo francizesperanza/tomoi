@@ -6,6 +6,10 @@ import Navbar from './components/Navbar';
 import TomoiCalendar from './components/TomoiCalendar';
 
 import JournalIcon from './assets/journal_menu_btn.svg?react';
+import HabitsIcon from './assets/habits_menu_btn.svg?react';
+import SlambookIcon from './assets/slambook_menu_btn.svg?react';
+import StatsIcon from './assets/stats_menu_btn.svg?react';
+
 import dayjs from 'dayjs';
 import duration from 'dayjs/plugin/duration';
 import TomoiHomeMenuBtn from './components/TomoiHomeMenuBtn';
@@ -41,9 +45,9 @@ function Home() {
         <Navbar></Navbar>
         <div className='flex flex-col min-h-dvh h-screen w-full overflow-y-auto bg-white justify-center items-center'>
             <div className='flex w-full max-w-7xl h-[80%] items-stretch justify-center z-10 gap-4'>
-                <div className='flex flex-col bg-[var(--tomoi-gray)] rounded-xl w-[35%] p-4 gap-4 h-full'>
+                <div className='flex flex-col bg-[var(--tomoi-gray)] justify-center rounded-xl w-[35%] p-4 gap-4 h-full shadow-md/40'>
                     <TomoiCalendar></TomoiCalendar>
-                    <div className='flex bg-white rounded-xl items-center justify-center grow-2 gap-3 border-dashed border-1'>
+                    <div className='flex bg-white rounded-xl items-center justify-center grow-2 gap-3 border-dashed max-h-[15%] border-1'>
                         <div className='flex gap-4 px-5 w-[80%] items-center justify-center'>
                             <ExclamationTriangle width={40} height={40} className='fill-[var(--tomoi-yellow)]'></ExclamationTriangle>
                             <div className='flex flex-col items-center'>
@@ -61,17 +65,16 @@ function Home() {
                         
                 </div>
                 <div className='grid grid-flow-row grid-cols-2 grid-rows-4 bg-transparent w-[25%] gap-2'>
-                    {false && <TomoiHomeMenuBtn icon={<JournalIcon className='w-50 h-50 fill-white float-right'/>} btnName="Journal" colSpan="2" rowSpan="2"></TomoiHomeMenuBtn>}
-                    <button className='bg-[var(--tomoi-yellow)] rounded-xl col-span-2 row-span-2'>journal</button>
-                    <button className='bg-[var(--tomoi-yellow)] rounded-xl'>habits</button>
-                    <button className='bg-[var(--tomoi-yellow)] rounded-xl'>scrapbook</button>
-                    <button className='bg-[var(--tomoi-gray)] col-span-2 rounded-xl'>stats</button>
+                    <TomoiHomeMenuBtn icon={<JournalIcon/>} btnName="Journal" colSpan="2" rowSpan="2" bgColor="var(--tomoi-yellow)" textColor="var(--tomoi-yellow)"></TomoiHomeMenuBtn>
+                    <TomoiHomeMenuBtn icon={<HabitsIcon/>} btnName="Habits" colSpan="1" rowSpan="1" bgColor="var(--tomoi-yellow)" textColor="var(--tomoi-yellow)"></TomoiHomeMenuBtn>
+                    <TomoiHomeMenuBtn icon={<SlambookIcon/>} btnName="Slambook" colSpan="1" rowSpan="1" bgColor="var(--tomoi-yellow)" textColor="var(--tomoi-yellow)"></TomoiHomeMenuBtn>
+                    <TomoiHomeMenuBtn icon={<StatsIcon/>} btnName="Stats" colSpan="2" rowSpan="1" bgColor="var(--tomoi-gray)" textColor="var(--tomoi-gray-d)"></TomoiHomeMenuBtn>
                 </div>
                 <div className='flex flex-col w-[35%] gap-2'>
-                    <div className='bg-[var(--tomoi-gray)] h-[50%] rounded-xl'> featured list </div>
+                    <div className='shadow-md/40 bg-[var(--tomoi-gray)] h-[50%] rounded-xl'> featured list </div>
                     <div className='flex flex-col h-[50%]'>
                         <div className='text-3xl font-bold'>Last activity</div>
-                        <div className='shadow-sm/30 bg-white rounded-xl h-full gap-2'>ENTRY</div>
+                        <div className='shadow-md/40 bg-white rounded-xl h-full gap-2'>ENTRY</div>
                     </div>
                 </div>
             </div>
