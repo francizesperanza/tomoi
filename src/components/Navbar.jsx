@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState} from 'react'
 import { CaretLeftFill, Google, List, PersonCircle } from 'react-bootstrap-icons'
 import { Link, useNavigate } from 'react-router-dom'
 import { toast} from 'react-hot-toast'
@@ -6,13 +6,14 @@ import { useAuth } from './AuthProvider'
 
 function Navbar() {
   const {user} = useAuth();
+  const navigate = useNavigate();
   const [isNavOpen, setIsNavOpen] = useState(false);
 
   const menuButtons = [
-    {name: "Journal", path: "/home"},
-    {name: "Habits", path: "/home"},
-    {name: "Scrapbook", path: "/home"},
-    {name: "Stats", path: "/home"},
+    {name: "Journal", path: "/journal"},
+    {name: "Habits", path: "/habits"},
+    {name: "Slambook", path: "/slambook"},
+    {name: "Stats", path: "/stats"},
   ]
 
   const collapseNav = () => {
@@ -38,7 +39,9 @@ function Navbar() {
         <div className='flex'>
           <div className='flex'>
             <div data-text="tomoi" className='alt-font text-4xl rounded-full z-12 bg-[var(--tomoi-yellow)] px-8 py-2 stroked hover:bg-[var(--tomoi-yellow-d)] shadow-sm/30'
-              style={{"--inside-color": 'black'}}>tomoi
+              style={{"--inside-color": 'black'}}
+              onClick={() => navigate('/home')}
+              >tomoi
             </div>
             {!isNavOpen ? 
             <div className='bg-white -ml-18 flex items-center border-3 border-[var(--tomoi-gray-d)] rounded-full px-5 hover:border-black group shadow-sm/30' onClick={() => {collapseNav()}}>
