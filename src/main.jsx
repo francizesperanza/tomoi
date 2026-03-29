@@ -8,6 +8,7 @@ import SignUp from './SignUp.jsx'
 import Home from './Home.jsx'
 import PrivateRoute from './components/PrivateRoute.jsx'
 import AuthProvider from './components/AuthProvider.jsx'
+import NotAvailable from './NotAvailable.jsx'
 
 createRoot(document.getElementById('root')).render(
   <>
@@ -21,6 +22,10 @@ createRoot(document.getElementById('root')).render(
             <PrivateRoute>
               <Home />
             </PrivateRoute>}/>
+          <Route path="/journal" element={<NotAvailable/>} />
+          <Route path="/habits" element={<NotAvailable/>} />
+          <Route path="/slambook" element={<NotAvailable/>} />
+          <Route path="/stats" element={<NotAvailable/>} />
         </Routes>
       </Router>
     </AuthProvider>
