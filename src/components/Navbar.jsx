@@ -44,10 +44,10 @@ function Navbar() {
               >tomoi
             </div>
             {!isNavOpen ? 
-            <div className='bg-white -ml-18 flex items-center border-3 border-[var(--tomoi-gray-d)] rounded-full px-5 hover:border-black group shadow-sm/30' onClick={() => {collapseNav()}}>
+            <div className='bg-white -ml-18 flex items-center border-dashed border-3 border-[var(--tomoi-gray-d)] rounded-full px-5 hover:border-black group shadow-sm/30' onClick={() => {collapseNav()}}>
               <List className='stroke-[var(--tomoi-gray-d)] ml-15 group-hover:stroke-black' width={30} height={30}></List>
             </div> :
-            <div className='bg-white -ml-18 gap-10 flex items-center border-3 border-black rounded-full px-5 pl-30 hover:border-black group shadow-sm/30'>
+            <div className='bg-white -ml-18 gap-10 flex items-center border-dashed border-3 border-black rounded-full px-5 pl-30 hover:border-black group shadow-sm/30'>
               {menuButtons.map(({name, path},index) => (
                   <Link to={path} key={index} className='alt-font text-xl hover:text-[var(--tomoi-yellow)]'>{name}</Link>
               ))}
@@ -55,7 +55,7 @@ function Navbar() {
             </div>}
           </div>
             
-          <div className='bg-white gap-2 flex rounded-full font-bold text-lg items-center justify-center ml-auto border-3 px-4 cursor-pointer hover:bg-[var(--tomoi-gray-d)] shadow-sm/30'>
+          <div className='bg-white gap-2 flex rounded-full font-bold text-lg items-center justify-center ml-auto border-dashed border-3 px-4 cursor-pointer hover:bg-[var(--tomoi-gray-d)] shadow-sm/30'>
             {user?.username ?? "unnamed"}
             <PersonCircle width={30} height={30}></PersonCircle>
           </div>

@@ -101,12 +101,12 @@ function TomoiCalendar() {
                     <button type='button' className='p-2 rounded-l-md bg-[var(--tomoi-gray)] hover:bg-[var(--tomoi-gray-d)]' onClick={() => (setCurrentDate(currentDate.subtract(1, 'month')))}>
                         <CaretLeftFill width={20} height={20}></CaretLeftFill>
                     </button>
-                    <button type='button' className='p-2 rounded-r-md bg-[var(--tomoi-gray)] hover:bg-[var(--tomoi-gray-d)] border-l-1' onClick={() => (setCurrentDate(currentDate.add(1, 'month')))}>
+                    <button type='button' className='p-2 rounded-r-md bg-[var(--tomoi-gray)] hover:bg-[var(--tomoi-gray-d)] border-dashed border-l-1' onClick={() => (setCurrentDate(currentDate.add(1, 'month')))}>
                         <CaretRightFill width={20} height={20}></CaretRightFill>
                     </button>
                 </div>
             </div>
-            <div className='grid grid-cols-7 w-full items-center justify-center gap-2'>
+            <div className='grid grid-cols-7 w-full items-center justify-center gap-3'>
                 <div className='grid grid-cols-7 col-span-7 w-full items-center justify-around bg-[var(--tomoi-yellow)] alt-font text-2xl rounded-full'>
                     {weekDays.map((day, index) => (
                         <div key={index} className='text-center'>{day}</div>

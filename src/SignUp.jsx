@@ -175,7 +175,7 @@ function SignUp() {
             <div className='flex flex-col w-[30%] mt-[10vh] mb-[10vh] items-center justify-center bg-white rounded-xl min-h-dvh p-10 gap-2 shadow-md/30 z-10'>
                 <div className='alt-font text-5xl'>tomoi</div>
                 <div className='text-xl'>Start rambling now!</div>
-                <button className='flex flex-row gap-3 mt-[6vh] mb-[2vh] items-center justify-center w-full bg-[var(--tomoi-gray-l)] hover:bg-[var(--tomoi-gray-d)] rounded-full py-2 px-4 font-bold shadow-sm/30 border-1' type="button">
+                <button className='flex flex-row gap-3 mt-[6vh] mb-[2vh] items-center justify-center w-full bg-[var(--tomoi-gray-l)] hover:bg-[var(--tomoi-gray-d)] rounded-full py-2 px-4 font-bold shadow-sm/30 outline-2 outline-dashed' type="button">
                     <Google className='' width={20} height={20} />
                     Login with Google
                 </button>
@@ -219,7 +219,7 @@ function SignUp() {
                                 setPassword(e.target.value);
                                 checkPasswordValidity(e.target.value);
                             }} />
-                            <button dir='rtl' className='border-dashed border-1 rounded-s-lg flex w-[20%] items-center justify-center cursor-pointer bg-[var(--tomoi-yellow-l)] hover:bg-[var(--tomoi-yellow)]' type='button' onClick={() => setIsPasswordVisible(!isPasswordVisible)}>
+                            <button dir='rtl' className='border-dashed border-2 rounded-s-lg flex w-[20%] items-center justify-center cursor-pointer bg-[var(--tomoi-yellow-l)] hover:bg-[var(--tomoi-yellow)]' type='button' onClick={() => setIsPasswordVisible(!isPasswordVisible)}>
                                 {isPasswordVisible ? <EyeIcon className='' width={20} height={20} /> : <EyeClosed className='' width={20} height={20} />}
                             </button>
                         </div>
@@ -251,10 +251,10 @@ function SignUp() {
                     </div>
 
                     <div className='flex flex-col items-center justify-center w-full gap-2'>
-                        <button className='w-full bg-[var(--tomoi-green)] hover:bg-[var(--tomoi-green-d)] rounded-full py-2 px-4 font-bold shadow-sm/30 border-1' type="submit">Sign Up</button>
+                        <button className='w-full bg-[var(--tomoi-green)] hover:bg-[var(--tomoi-green-d)] rounded-full py-2 px-4 font-bold shadow-sm/30 outline-2 outline-dashed' type="submit">Sign Up</button>
                         <div className='mt-5 italic'>Already have an account? </div>
                         <Link to="/login" className='w-full'>
-                            <button className='flex flex-row gap-3 items-center justify-center w-full bg-[var(--tomoi-yellow-l)] hover:bg-[var(--tomoi-yellow-d)] rounded-full py-2 px-4 font-bold shadow-sm/30 border-1' type="button">
+                            <button className='flex flex-row gap-3 items-center justify-center w-full bg-[var(--tomoi-yellow-l)] hover:bg-[var(--tomoi-yellow-d)] rounded-full py-2 px-4 font-bold shadow-sm/30 outline-2 outline-dashed' type="button">
                                 Login
                             </button>
                         </Link>
