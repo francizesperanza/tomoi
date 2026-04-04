@@ -66,4 +66,8 @@ p.is-editor-empty:first-child::before {
     float: left;
     height: 0;
     pointer-events: none;
-  }
+}
+
+.is-active {
+    border-style: double;
+}

@@ -1,19 +1,30 @@
-import {useEffect, useState} from 'react'
+import {useRef, useState} from 'react'
 import Modal from './Modal';
 
-import { useEditor, EditorContent, EditorContext } from '@tiptap/react'
+import { useEditor, EditorContent, EditorContext, useEditorState } from '@tiptap/react'
 import { FloatingMenu, BubbleMenu } from '@tiptap/react/menus'
-import { Placeholder } from '@tiptap/extensions'
+import { Placeholder} from '@tiptap/extensions'
+import { TextStyleKit, Color } from '@tiptap/extension-text-style'
 import StarterKit from '@tiptap/starter-kit'
 import { useMemo } from 'react'
 import './EditorText.css'
-import { BlockquoteLeft, CodeSlash, ListOl, ListUl, TypeBold, TypeItalic, TypeStrikethrough, TypeUnderline } from 'react-bootstrap-icons';
+import { BlockquoteLeft, CaretUpFill, CodeSlash, Eyedropper, ListOl, ListUl, TypeBold, TypeItalic, TypeStrikethrough, TypeUnderline, } from 'react-bootstrap-icons';
+import { Popover } from '@mui/material';
 
 
 function EntryEditor({isOpen, onClose}) {
+    const [colorPickerAnchor, setColorPickerAnchor] = useState(null);
+    const [isPickingColor, setIsPickingColor] = useState(false);
+    const [lastColor, setLastColor] = useState('#000000');
+
+    const inputRef = useRef(null);
+    const color_popover_open = Boolean(colorPickerAnchor);
+    const color_popover_id = color_popover_open ? 'color-popover' : undefined;
 
     const editor = useEditor({
-        extensions: [StarterKit,
+        extensions: [
+            StarterKit, 
+            TextStyleKit,
             Placeholder.configure({
                 placeholder: 'Write something ...',
             })
@@ -27,12 +38,64 @@ function EntryEditor({isOpen, onClose}) {
             class: 'focus:outline-none w-full mt-10',
             },
         },
+        onCreate({ editor }) {
+            editor.chain().setColor('#000000').run()
+        },
     })
 
     const providerValue = useMemo(() => ({ editor }), [editor])
 
+    const editorState = useEditorState({
+        editor,
+        selector: ctx => {
+            if (!ctx.editor) {
+                return {
+                    color: '#000000',
+                    isPurple: false,
+                    isRed: false,
+                    isOrange: false,
+                    isYellow: false,
+                    isBlue: false,
+                    isTeal: false,
+                    isGreen: false,
+                }
+            }
+
+            const color = ctx.editor.getAttributes('textStyle').color || '#000000'
+
+            return {
+                color,
+                isBlack: color === '#000000',
+                isWhite: color === '#FFFFFF',
+                isGray: color === 'var(--tomoi-gray)',
+                isMagenta: color === 'var(--tomoi-magenta)',
+                isPink: color === 'var(--tomoi-pink)',
+                isNavy: color === 'var(--tomoi-navy)',
+                isViolet: color === 'var(--tomoi-violet)',
+                isRed: color === 'var(--tomoi-red)',
+                isOrange: color === 'var(--tomoi-orange)',
+                isYellow: color === 'var(--tomoi-yellow)',
+                isBlue: color === 'var(--tomoi-blue)',
+                isCyan: color === 'var(--tomoi-cyan)',
+                isGreen: color === 'var(--tomoi-green)',
+            }
+        },
+    })
+
     if (!editor) {
         return null
+    }
+
+    const openColorPopover = (e) => {
+        setColorPickerAnchor(e.currentTarget);
+    }
+    
+    const closeColorPopover = () => {
+        setColorPickerAnchor(null);
+    }
+
+    const selectColor = () => {
+        inputRef.current.click();
     }
 
     const saveSettings = () => {    
@@ -48,7 +111,7 @@ function EntryEditor({isOpen, onClose}) {
     }
 
     const clickOutside = () => {
-
+        onClose();
     }
 
     return (
@@ -63,7 +126,7 @@ function EntryEditor({isOpen, onClose}) {
                     <EditorContext.Provider value={providerValue}>
                         <EditorContent className='prose max-w-none w-full' editor={editor} />
                         <FloatingMenu editor={editor}>
-                            <div className="bg-[var(--tomoi-gray-l)] rounded-lg border-1 border-dashed text-md flex divide-x-1 divide-dashed items-center justify-center h-[1.75em] items-stretch">
+                            <div className="bg-white shadow-sm/40 rounded-lg border-1 border-dashed text-md flex divide-x-1 divide-dashed items-center justify-center h-[1.75em] items-stretch">
                                 <button
                                 onClick={() => editor.chain().focus().setHeading({ level: 1 }).run()}
                                 className={'px-2 hover:bg-[var(--tomoi-gray-d)] rounded-l-lg font-bold'}
@@ -114,8 +177,13 @@ function EntryEditor({isOpen, onClose}) {
                                 </button>
                             </div>
                         </FloatingMenu>
-                        <BubbleMenu editor={editor}>
-                            <div className="bg-[var(--tomoi-gray-l)] rounded-lg border-1 border-dashed text-md flex divide-x-1 divide-dashed items-center justify-center h-[1.75em] items-stretch">
+                        <BubbleMenu editor={editor}
+                        tippyOptions={{
+                            hideOnClick: false,
+                            duration: 300,
+                            interactive: true,
+                        }}>
+                            <div className="bg-white shadow-sm/40 rounded-lg border-1 border-dashed text-md flex divide-x-1 divide-dashed items-center justify-center h-[1.75em] items-stretch">
                                 <button
                                 onClick={() => editor.chain().focus().toggleBold().run()}
                                 className={'px-2 hover:bg-[var(--tomoi-gray-d)] rounded-l-lg font-bold'}
@@ -140,6 +208,22 @@ function EntryEditor({isOpen, onClose}) {
                                 >
                                 <TypeStrikethrough></TypeStrikethrough>
                                 </button>
+
+                                <div className='flex divide-x-1 divide-[var(--tomoi-gray-d)] divide-dashed items-stretch'>
+                                    <button
+                                    onClick={(e) => editor.chain().focus().setColor(lastColor).run()}
+                                    className={'px-2 hover:bg-[var(--tomoi-gray-d)] items-stretch flex flex-col justify-center leading-[1em]'}
+                                    >
+                                    A
+                                    <div className='min-h-1 min-w-5' style={{
+                                        'backgroundColor' : lastColor,
+                                    }}></div>
+                                    </button>
+                                    <button className='px-1 flex items-center justify-center hover:bg-[var(--tomoi-gray-d)]' onClick={(e) => openColorPopover(e)}>
+                                        <CaretUpFill width={'.8em'} height={'.8em'}></CaretUpFill>
+                                    </button>
+                                </div>
+
                                 <button
                                 onClick={() => editor.chain().focus().toggleBulletList('bulletList', 'listItem').run()}
                                 className={'px-2 hover:bg-[var(--tomoi-gray-d)]'}
@@ -169,6 +253,128 @@ function EntryEditor({isOpen, onClose}) {
                     </EditorContext.Provider>
                 </div>
             </Modal>
+            <Popover
+                id={color_popover_id}
+                open={color_popover_open}
+                anchorEl={colorPickerAnchor}
+                onClose={closeColorPopover}
+                elevation={2}
+                disableScrollLock
+                anchorOrigin={{
+                vertical: 'top',
+                horizontal: 'left',
+                }}
+                transformOrigin={{
+                vertical: 'bottom',
+                horizontal: 'top',
+                }}
+                slotProps={{
+                    paper: {
+                        sx: {
+                            backgroundColor: 'var(--tomoi-yellow-l)',
+                            border: '1px dashed black',
+                            borderRadius: '8px',
+                            mt: -1,
+                            display: 'flex',
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                        },
+                    },
+                }}
+            >
+                <div className='inline-flex flex-row flex-wrap items-center justify-center px-2 py-1 gap-1'>
+                    <button
+                        onClick={() => {editor.chain().focus().setColor('#000000').run(); setLastColor('#000000'); closeColorPopover(); editor.chain().focus().run()} }
+                        className={(editorState.isBlack ? 'is-active' : '') + ' w-5 h-5 cursor-pointer rounded-sm bg-black outline-1 outline-dashed hover:outline-2'}
+                        data-testid="setBlack"
+                    >
+                    </button>
+
+                    <button
+                        onClick={() => {editor.chain().focus().setColor('#FFFFFF').run(); setLastColor('#FFFFFF'); closeColorPopover(); editor.chain().focus().run()} }
+                        className={(editorState.isWhite ? 'is-active' : '') + ' w-5 h-5 cursor-pointer rounded-sm bg-white outline-1 outline-dashed hover:outline-2'}
+                        data-testid="setWhite"
+                    >
+                    </button>
+
+                    <button
+                        onClick={() => {editor.chain().focus().setColor('var(--tomoi-gray)').run(); setLastColor('var(--tomoi-gray)'); closeColorPopover(); editor.chain().focus().run()} }
+                        className={(editorState.isGray ? 'is-active' : '') + ' w-5 h-5 cursor-pointer rounded-sm bg-[var(--tomoi-gray)] outline-1 outline-dashed hover:outline-2'}
+                        data-testid="setGray"
+                    >
+                    </button>
+
+                    <button
+                        onClick={() => {editor.chain().focus().setColor('var(--tomoi-red)').run(); setLastColor('var(--tomoi-red)'); closeColorPopover(); editor.chain().focus().run()} }
+                        className={(editorState.isRed ? 'is-active' : '') + ' w-5 h-5 cursor-pointer rounded-sm bg-[var(--tomoi-red)] outline-1 outline-dashed hover:outline-2'}
+                        data-testid="setRed"
+                    >
+                    </button>
+                    
+                    <button
+                        onClick={() => {editor.chain().focus().setColor('var(--tomoi-orange)').run(); setLastColor('var(--tomoi-orange)'); closeColorPopover(); editor.chain().focus().run()} }
+                        className={(editorState.isOrange ? 'is-active' : '') + ' w-5 h-5 cursor-pointer rounded-sm bg-[var(--tomoi-orange)] outline-1 outline-dashed hover:outline-2'}
+                        data-testid="setOrange"
+                    >
+                    </button>
+                    
+                    <button
+                        onClick={() => {editor.chain().focus().setColor('var(--tomoi-yellow)').run(); setLastColor('var(--tomoi-yellow)'); closeColorPopover(); editor.chain().focus().run()} }
+                        className={(editorState.isYellow ? 'is-active' : '') + ' w-5 h-5 cursor-pointer rounded-sm bg-[var(--tomoi-yellow)] outline-1 outline-dashed hover:outline-2'}
+                        data-testid="setYellow"
+                    >
+                    </button>
+                    
+                    <button
+                        onClick={() => {editor.chain().focus().setColor('var(--tomoi-green)').run(); setLastColor('var(--tomoi-green)'); closeColorPopover(); editor.chain().focus().run()} }
+                        className={(editorState.isGreen ? 'is-active' : '') + ' w-5 h-5 cursor-pointer rounded-sm bg-[var(--tomoi-green)] outline-1 outline-dashed hover:outline-2'}
+                        data-testid="setGreen"
+                    >
+                    </button>
+                    
+                    <button
+                        onClick={() => {editor.chain().focus().setColor('var(--tomoi-cyan)').run(); setLastColor('var(--tomoi-cyan)'); closeColorPopover(); editor.chain().focus().run()} }
+                        className={(editorState.isCyan ? 'is-active' : '') + ' w-5 h-5 cursor-pointer rounded-sm bg-[var(--tomoi-cyan)] outline-1 outline-dashed hover:outline-2'}
+                        data-testid="setCyan"
+                    >
+                    </button>
+                    
+                    <button
+                        onClick={() => {editor.chain().focus().setColor('var(--tomoi-blue)').run(); setLastColor('var(--tomoi-blue)'); closeColorPopover(); editor.chain().focus().run()} }
+                        className={(editorState.isBlue ? 'is-active' : '') + ' w-5 h-5 cursor-pointer rounded-sm bg-[var(--tomoi-blue)] outline-1 outline-dashed hover:outline-2'}
+                        data-testid="setBlue"
+                    >
+                    </button>
+                    
+                    <button
+                        onClick={() => {editor.chain().focus().setColor('var(--tomoi-navy)').run(); setLastColor('var(--tomoi-navy)'); closeColorPopover(); editor.chain().focus().run()} }
+                        className={(editorState.isNavy ? 'is-active' : '') + ' w-5 h-5 cursor-pointer rounded-sm bg-[var(--tomoi-navy)] outline-1 outline-dashed hover:outline-2'}
+                        data-testid="setNavy"
+                    >
+                    </button>
+
+                    <button
+                        onClick={() => {editor.chain().focus().setColor('var(--tomoi-violet)').run(); setLastColor('var(--tomoi-violet)'); closeColorPopover(); editor.chain().focus().run()} }
+                        className={(editorState.isViolet ? 'is-active' : '') + ' w-5 h-5 cursor-pointer rounded-sm bg-[var(--tomoi-violet)] outline-1 outline-dashed hover:outline-2'}
+                        data-testid="setViolet"
+                    >
+                    </button>
+                    
+                    <button
+                        onClick={() => {editor.chain().focus().setColor('var(--tomoi-pink)').run(); setLastColor('var(--tomoi-pink)'); closeColorPopover(); editor.chain().focus().run()} }
+                        className={(editorState.isPink ? 'is-active' : '') + ' w-5 h-5 cursor-pointer rounded-sm bg-[var(--tomoi-pink)] outline-1 outline-dashed hover:outline-2'}
+                        data-testid="setPink"
+                    >
+                    </button>
+
+                    <button
+                        onClick={() => {editor.chain().focus().setColor('var(--tomoi-magenta)').run(); setLastColor('var(--tomoi-magenta)'); closeColorPopover(); editor.chain().focus().run()} }
+                        className={(editorState.isMagenta ? 'is-active' : '') + ' w-5 h-5 cursor-pointer rounded-sm bg-[var(--tomoi-magenta)] outline-1 outline-dashed hover:outline-2'}
+                        data-testid="setMagenta"
+                    >
+                    </button>
+                </div>
+            </Popover>
         </>
     );
 }
