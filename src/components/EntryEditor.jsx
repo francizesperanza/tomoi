@@ -14,12 +14,14 @@ import { Popover } from '@mui/material';
 
 function EntryEditor({isOpen, onClose}) {
     const [colorPickerAnchor, setColorPickerAnchor] = useState(null);
-    const [isPickingColor, setIsPickingColor] = useState(false);
+    const [highlightColorPickerAnchor, setHighlightColorPickerAnchor] = useState(null);
     const [lastColor, setLastColor] = useState('var(--tomoi-black)');
+    const [lastHighlightColor, setLastHighlightColor] = useState('var(--tomoi-white)');
 
-    const inputRef = useRef(null);
     const color_popover_open = Boolean(colorPickerAnchor);
     const color_popover_id = color_popover_open ? 'color-popover' : undefined;
+    const highlight_color_popover_open = Boolean(highlightColorPickerAnchor);
+    const highlight_color_popover_id = highlight_color_popover_open ? 'color-highlight-popover' : undefined;
 
     const editor = useEditor({
         extensions: [
@@ -29,7 +31,7 @@ function EntryEditor({isOpen, onClose}) {
                 placeholder: 'Write something ...',
             })
         ],
-        content: '<p>Hello World!</p>',
+        content: '',
         immediatelyRender: false,
         autofocus: true,
         editable: true,
@@ -44,19 +46,19 @@ function EntryEditor({isOpen, onClose}) {
     })
 
     const colorMap = [
-        {name: 'Black', color: 'var(--tomoi-black)'},
-        {name: 'White', color: 'var(--tomoi-white)'},
-        {name: 'Gray', color: 'var(--tomoi-gray)'},
-        {name: 'Red', color: 'var(--tomoi-red)'},
-        {name: 'Orange', color: 'var(--tomoi-orange)'},
-        {name: 'Yellow', color: 'var(--tomoi-yellow)'},
-        {name: 'Green', color: 'var(--tomoi-green)'},
-        {name: 'Cyan', color: 'var(--tomoi-cyan)'},
-        {name: 'Blue', color: 'var(--tomoi-blue)'},
-        {name: 'Navy', color: 'var(--tomoi-navy)'},
-        {name: 'Violet', color: 'var(--tomoi-violet)'},
-        {name: 'Pink', color: 'var(--tomoi-pink)'},
-        {name: 'Magenta', color: 'var(--tomoi-magenta)'},
+        {name: 'Black', color: 'var(--tomoi-black)', highlight: 'var(--tomoi-gray-d)'},
+        {name: 'White', color: 'var(--tomoi-white)', highlight: 'var(--tomoi-white)'},
+        {name: 'Gray', color: 'var(--tomoi-gray)', highlight: 'var(--tomoi-gray-l)'},
+        {name: 'Red', color: 'var(--tomoi-red)', highlight: 'var(--tomoi-red-l)'},
+        {name: 'Orange', color: 'var(--tomoi-orange)', highlight: 'var(--tomoi-orange-l)'},
+        {name: 'Yellow', color: 'var(--tomoi-yellow)', highlight: 'var(--tomoi-yellow-l)'},
+        {name: 'Green', color: 'var(--tomoi-green)', highlight: 'var(--tomoi-green-l)'},
+        {name: 'Cyan', color: 'var(--tomoi-cyan)', highlight: 'var(--tomoi-cyan-l)'},
+        {name: 'Blue', color: 'var(--tomoi-blue)', highlight: 'var(--tomoi-blue-l)'},
+        {name: 'Navy', color: 'var(--tomoi-navy)', highlight: 'var(--tomoi-navy-l)'},
+        {name: 'Violet', color: 'var(--tomoi-violet)', highlight: 'var(--tomoi-violet-l)'},
+        {name: 'Pink', color: 'var(--tomoi-pink)', highlight: 'var(--tomoi-pink-l)'},
+        {name: 'Magenta', color: 'var(--tomoi-magenta)', highlight: 'var(--tomoi-magenta-l)'},
     ]
 
     const providerValue = useMemo(() => ({ editor }), [editor])
@@ -105,13 +107,17 @@ function EntryEditor({isOpen, onClose}) {
     const openColorPopover = (e) => {
         setColorPickerAnchor(e.currentTarget);
     }
+
+    const openHighlightColorPopover = (e) => {
+        setHighlightColorPickerAnchor(e.currentTarget);
+    }
     
     const closeColorPopover = () => {
         setColorPickerAnchor(null);
     }
 
-    const selectColor = () => {
-        inputRef.current.click();
+    const closeHighlightColorPopover = () => {
+        setHighlightColorPickerAnchor(null);
     }
 
     const saveSettings = () => {    
@@ -240,6 +246,20 @@ function EntryEditor({isOpen, onClose}) {
                                     </button>
                                 </div>
 
+                                <div className='flex divide-x-1 divide-[var(--tomoi-gray-d)] divide-dashed items-stretch'>
+                                    <button
+                                    onClick={(e) => editor.chain().focus().setBackgroundColor(lastHighlightColor).run()}
+                                    className={'px-2 hover:bg-[var(--tomoi-gray-d)] items-stretch flex flex-col justify-center leading-[1em]'}
+                                    >
+                                        <div className='min-h-1 min-w-5' style={{
+                                            'backgroundColor' : lastHighlightColor,
+                                        }}>A</div>
+                                    </button>
+                                    <button className='px-1 flex items-center justify-center hover:bg-[var(--tomoi-gray-d)]' onClick={(e) => openHighlightColorPopover(e)}>
+                                        <CaretUpFill width={'.8em'} height={'.8em'}></CaretUpFill>
+                                    </button>
+                                </div>
+
                                 <button
                                 onClick={() => editor.chain().focus().toggleBulletList('bulletList', 'listItem').run()}
                                 className={'px-2 hover:bg-[var(--tomoi-gray-d)]'}
@@ -287,7 +307,7 @@ function EntryEditor({isOpen, onClose}) {
                 slotProps={{
                     paper: {
                         sx: {
-                            backgroundColor: 'var(--tomoi-yellow-l)',
+                            backgroundColor: 'var(--tomoi-white)',
                             border: '1px dashed black',
                             borderRadius: '8px',
                             mt: -1,
@@ -305,6 +325,49 @@ function EntryEditor({isOpen, onClose}) {
                             onClick={() => {editor.chain().focus().setColor(color).run(); setLastColor(color); closeColorPopover(); editor.chain().focus().run()} }
                             className={`w-5 h-5 cursor-pointer rounded-sm outline-1 outline-dashed hover:outline-2`}
                             style={{ backgroundColor: color }}
+                            data-testid={`set${name}`}
+                        >
+                        </button>
+                    ))}
+                </div>
+            </Popover>
+
+            <Popover
+                id={highlight_color_popover_id}
+                open={highlight_color_popover_open}
+                anchorEl={highlightColorPickerAnchor}
+                onClose={closeHighlightColorPopover}
+                elevation={2}
+                disableScrollLock
+                anchorOrigin={{
+                vertical: 'top',
+                horizontal: 'left',
+                }}
+                transformOrigin={{
+                vertical: 'bottom',
+                horizontal: 'top',
+                }}
+                slotProps={{
+                    paper: {
+                        sx: {
+                            backgroundColor: 'var(--tomoi-white)',
+                            border: '1px dashed black',
+                            borderRadius: '8px',
+                            mt: -1,
+                            display: 'flex',
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                        },
+                    },
+                }}
+            >
+                <div className='inline-flex flex-row flex-wrap items-center justify-center px-2 py-1 gap-1'>
+                    {colorMap.map(({name, highlight},index)=> (
+                        <button
+                            key={`highlight-color-${name}`}
+                            onClick={() => {editor.chain().focus().setBackgroundColor(highlight).run(); setLastHighlightColor(highlight); closeHighlightColorPopover(); editor.chain().focus().run()} }
+                            className={`w-5 h-5 cursor-pointer rounded-sm outline-1 outline-dashed hover:outline-2`}
+                            style={{ backgroundColor: highlight }}
                             data-testid={`set${name}`}
                         >
                         </button>

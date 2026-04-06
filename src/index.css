@@ -17,14 +17,23 @@ body,
   --tomoi-gray-d: #818181;
   --tomoi-gray-l: #e3e3e3;
   --tomoi-green: #4dc769;
+  --tomoi-green-l: #9affb1;
   --tomoi-green-d: #349141;
   --tomoi-red: #d52e2e;
+  --tomoi-red-l: #ff6565;
   --tomoi-orange: #ee6425;
+  --tomoi-orange-l: #ff9767;
   --tomoi-blue: #2d88e3;
+  --tomoi-blue-l: #72b9ff;
   --tomoi-violet: #9968e8;
+  --tomoi-violet-l: #d6bcff;
   --tomoi-pink: #f05292;
+  --tomoi-pink-l: #ff9eb3;
+  --tomoi-magenta-l: #ff5bff;
   --tomoi-magenta: #e000e0;
   --tomoi-cyan: #00bcd4;
+  --tomoi-cyan-l: #62edff;
+  --tomoi-navy-l: #5f67bf;
   --tomoi-navy: #1c2262;
 }
 
