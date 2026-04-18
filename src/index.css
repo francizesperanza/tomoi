@@ -37,6 +37,12 @@ body,
   --tomoi-navy: #1c2262;
 }
 
+.default-font {
+  font-family: "Kulim Park", system-ui;
+  font-weight: 400;
+  font-style: normal;
+}
+
 .alt-font {
   font-family: "Kirang Haerang", system-ui;
   font-weight: 400;

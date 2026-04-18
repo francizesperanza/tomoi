@@ -4,7 +4,10 @@ const cors = require('cors');
 const mysql = require('mysql2');
 const dotenv = require('dotenv');
 const bcrypt = require('bcrypt');
+const crypto = require('crypto');
 const session = require('express-session');
+const { encrypt, decrypt } = require('./helper');
+const { fromBinaryUUID, toBinaryUUID, createBinaryUUID} = require("binary-uuid");
 const corsOptions = {
     origin: 'http://localhost:5173',
     credentials: true,
@@ -51,13 +54,14 @@ app.listen(8080, () => {
 app.post('/signup-user', (req, res) => {
     const { username, email, password } = req.body;
     const hashedPassword = bcrypt.hashSync(password, saltRounds);
-    const query = 'INSERT INTO users (username, email, password) VALUES (?, ?, ?)';
-    db.query(query, [username, email, hashedPassword], (err, result) => {
+    const uuid = createBinaryUUID();
+    const query = 'INSERT INTO users (userID, username, email, password) VALUES (?, ?, ?, ?)';
+    db.query(query, [uuid.buffer, username, email, hashedPassword], (err, result) => {
         if (err) {
             if (err.code === 'ER_DUP_ENTRY') {
                 return res.status(400).json({ error: 'Username or email already exists' });
             }
-            
+            console.error('Error inserting user:', err);
             res.status(500).json({ error: 'Error inserting user' });
         } else {
             res.status(201).json({ message: 'User created successfully' });
@@ -83,7 +87,7 @@ app.post('/login-user', (req, res) => {
                     if (err) {
                         res.status(500).json({ error: 'Error logging in' });
                     } else if (isMatch) {
-                        req.session.user = { userID: result[0].userID, username: result[0].username, email: result[0].email };
+                        req.session.user = { userID: fromBinaryUUID(result[0].userID), username: result[0].username, email: result[0].email };
                         res.status(200).json({ message: 'Login successful', user: req.session.user});
                     } else {
                         res.status(401).json({ error: 'Invalid username or password' });
@@ -131,4 +135,24 @@ app.get('/session-check', (req, res) => {
         return res.status(401).json({error: "User is not logged in."});
 
     return res.json(req.session.user);
+})
+
+// ENTRY ENDPOINTS
+
+app.post('/create-entry', (req, res) => {
+    const { title, author, content, feeling, dateCreated, lastEdited } = req.body;
+    const uuid = createBinaryUUID();
+    const encryptedContent = encrypt(process.env.ALGORITHM.toString(), Buffer.from(process.env.ENCRYPT_SECRET, 'hex'), content);
+    const query = 'INSERT INTO posts (postID, author, title, content, feeling, dateCreated, lastEdited) VALUES (?, ?, ?, ?, ?, ?, ?)';
+    db.query(query, [uuid.buffer, toBinaryUUID(author), title, encryptedContent, feeling, dateCreated, lastEdited], (err, result) => {
+        if (err) {
+            if (err.code === 'ER_DUP_ENTRY') {
+                return res.status(400).json({ error: 'Post already exists' });
+            }
+            console.error('Error inserting post:', err);
+            res.status(500).json({ error: 'Error inserting post' });
+        } else {
+            res.status(201).json({ message: 'Post created successfully' });
+        }
+    });
 })
