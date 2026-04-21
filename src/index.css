@@ -132,3 +132,7 @@ input[type="checkbox"]:checked::after {
   -webkit-text-stroke: #000;
   -webkit-text-stroke-width: 0px;
 }
+
+.day:hover {
+  outline: 2px dotted var(--tomoi-gray-d);
+}

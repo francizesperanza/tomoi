@@ -8,6 +8,8 @@ const crypto = require('crypto');
 const session = require('express-session');
 const { encrypt, decrypt } = require('./helper');
 const { fromBinaryUUID, toBinaryUUID, createBinaryUUID} = require("binary-uuid");
+const dayjs = require('dayjs');
+
 const corsOptions = {
     origin: 'http://localhost:5173',
     credentials: true,
@@ -156,3 +158,32 @@ app.post('/create-entry', (req, res) => {
         }
     });
 })
+
+app.get('/get-current-month-entries', (req, res) => {
+    const { userID, startDate, endDate} = req.query;
+    const query = 'SELECT * FROM posts WHERE author = ? AND dateCreated >= ? AND dateCreated < ?';
+    db.query(query, [toBinaryUUID(userID), startDate, endDate], (err, result) => {
+        if (err) {
+            console.error('Error fetching current month entries', err);
+            res.status(500).json({ error: 'Error fetching current month entries' });
+        } else {;
+            res.json(result);
+        }
+    });
+});
+
+app.get('/get-selected-date-entry', (req, res) => {
+    const { userID, startDate, endDate} = req.query;
+    const query = 'SELECT * FROM posts WHERE author = ? AND dateCreated >= ? AND dateCreated < ?';
+    db.query(query, [toBinaryUUID(userID), startDate, endDate], (err, result) => {
+        if (err) {
+            console.error('Error fetching entry', err);
+            res.status(500).json({ error: 'Error fetching entry' });
+        } else {;
+            if (result.length < 1) {
+                return res.json(result);
+            }
+            res.json(result[0]);
+        }
+    });
+});

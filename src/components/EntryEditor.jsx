@@ -11,6 +11,7 @@ import { useMemo } from 'react'
 import './EditorText.css'
 import { BlockquoteLeft, CaretUpFill, CodeSlash, EmojiNeutralFill, Eyedropper, ListOl, ListUl, TagFill, TypeBold, TypeItalic, TypeStrikethrough, TypeUnderline, } from 'react-bootstrap-icons';
 import { Popover, Chip, Autocomplete, TextField} from '@mui/material';
+import dayjs, {Dayjs} from 'dayjs';
 
 function EntryEditor({isOpen, onClose}) {
     const {user} = useAuth();
@@ -145,8 +146,10 @@ function EntryEditor({isOpen, onClose}) {
 
     const handleSave = async (e) => {
         e.preventDefault()
-        const dateCreated = new Date().toISOString().slice(0, 19).replace('T', ' ');
+        const dateCreated = dayjs(Date.now()).format('YYYY-MM-DD HH:mm:ss');
         const lastEdited = dateCreated;
+
+        console.log(dateCreated)
 
         if (title.length === 0) {
             toast.error('Please enter a title for your entry!');
