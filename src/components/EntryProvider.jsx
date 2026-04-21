@@ -48,6 +48,7 @@ function EntryProvider ({children}) {
     }
 
     const getCurrentMonthEntries = async () => {
+        setMonthEntries([])
         const startDate = selectedDate.startOf('month').format('YYYY-MM-DD');
         const endDate = selectedDate.add(1, 'month').startOf('month').format('YYYY-MM-DD');
         try {
