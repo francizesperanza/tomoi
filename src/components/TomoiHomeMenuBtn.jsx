@@ -43,7 +43,6 @@ function TomoiHomeMenuBtn({icon, btnName, colSpan, rowSpan, bgColor, textColor, 
     });
 
     const onButtonLeave = (e) => {
-        console.log('hovering')
         animate(e.currentTarget.querySelector('.btn-text'),{
             scale: [
                 { to: 1, duration: 100},

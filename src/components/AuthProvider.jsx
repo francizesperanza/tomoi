@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect } from "react";
-
+import axios from "axios";
 const AuthContext = createContext();
 
 function AuthProvider ({children}) {
@@ -9,23 +9,19 @@ function AuthProvider ({children}) {
     useEffect(() => {
         const checkSession = async () => {
             try {
-                const response = await fetch('http://localhost:8080/session-check', {
-                    method: 'GET',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    credentials: 'include',
+                const API_URL = import.meta.env.VITE_API_URL
+                const response  = await axios.get(`${API_URL}/session-check`, {
+                    withCredentials: true
                 })
-                const data = await response.json();
-                if (response.status == 401) {
-                    setLoading(false);
-                    return data;
+                const data = response.data;
+                setUser(data);
+            } catch (err) {
+                if (err.response?.status === 401) {
+                    setUser(null);
                 } else {
-                    setUser(data);
-                    setLoading(false);
+                    alert("Error authenticating user");
                 }
-            } catch {
-                alert('Error authenticating user.');
+            } finally {
                 setLoading(false);
             }
         }

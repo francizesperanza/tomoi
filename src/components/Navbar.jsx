@@ -23,7 +23,6 @@ function Navbar() {
 
   useEffect (() => {
     const navPref = localStorage.getItem('navPref');
-
     if (navPref){
       const navOpen = JSON.parse(navPref);
       setIsNavOpen(navOpen);

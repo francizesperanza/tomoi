@@ -14,7 +14,9 @@ function encrypt (algorithm, key, data) {
 
 function decrypt (algorithm, key, data) {
     const parts = data.split(':');
+    
     const iv = Buffer.from(parts.shift(), 'hex');
+    
     const encryptedData = parts.join(':');
     const decipher = crypto.createDecipheriv(algorithm, key, iv);
     

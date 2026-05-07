@@ -11,13 +11,24 @@ import AuthProvider from './components/AuthProvider.jsx'
 import NotAvailable from './NotAvailable.jsx'
 import Journal from './Journal.jsx'
 import EntryProvider from './components/EntryProvider.jsx'
+import {useAuth} from './components/AuthProvider.jsx'
+
+import axios from 'axios';
+
+axios.defaults.headers.common['Content-Type'] = 'application/json';
+axios.defaults.withCredentials = true;
+
+function DefaultRedirect() {
+  const { user } = useAuth();
+
+  return <Navigate to={user ? "/home" : "/login"} replace />;
+}
 
 createRoot(document.getElementById('root')).render(
   <>
     <AuthProvider>
         <Router>
           <Routes>
-            <Route path="*" element={<Navigate replace to="/login" />} />
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<SignUp />} />
             <Route
@@ -41,6 +52,9 @@ createRoot(document.getElementById('root')).render(
             <Route path="/habits" element={<NotAvailable/>} />
             <Route path="/slambook" element={<NotAvailable/>} />
             <Route path="/stats" element={<NotAvailable/>} />
+
+            
+            <Route path="*" element={<DefaultRedirect />} />
           </Routes>
         </Router>
     </AuthProvider>

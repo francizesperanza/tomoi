@@ -1,4 +1,4 @@
-import {useRef, useState} from 'react'
+import {useRef, useState, useEffect} from 'react'
 import Modal from './Modal';
 import { useAuth } from './AuthProvider'
 import { useEditor, EditorContent, EditorContext, useEditorState } from '@tiptap/react'
@@ -12,9 +12,12 @@ import './EditorText.css'
 import { BlockquoteLeft, CaretUpFill, CodeSlash, EmojiNeutralFill, Eyedropper, ListOl, ListUl, TagFill, TypeBold, TypeItalic, TypeStrikethrough, TypeUnderline, } from 'react-bootstrap-icons';
 import { Popover, Chip, Autocomplete, TextField} from '@mui/material';
 import dayjs, {Dayjs} from 'dayjs';
+import { useEntry } from './EntryProvider';
+import axios from 'axios'
 
-function EntryEditor({isOpen, onClose}) {
+function EntryEditor({isOpen, onClose, mode}) {
     const {user} = useAuth();
+    const {selectedEntry, selectedDate, refreshEntries} = useEntry();
     const [colorPickerAnchor, setColorPickerAnchor] = useState(null);
     const [highlightColorPickerAnchor, setHighlightColorPickerAnchor] = useState(null);
     const [lastColor, setLastColor] = useState('var(--tomoi-black)');
@@ -23,6 +26,9 @@ function EntryEditor({isOpen, onClose}) {
     const [tags, setTags] = useState([]);
     const [editorContent, setEditorContent] = useState('');
     const [title, setTitle] = useState('');
+
+    const lastEditedDate = mode === 'new' ? dayjs(new Date()).format('MMMM DD, YYYY hh:mm A') : dayjs(selectedEntry.lastEdited).format('MMMM DD, YYYY hh:mm A')
+  
 
     const handleFeelingChange = (event) => {
         setFeeling(event.target.value);
@@ -81,11 +87,30 @@ function EntryEditor({isOpen, onClose}) {
         {name: 'Excited', color: 'var(--tomoi-orange-l)'},
         {name: 'Anxious', color: 'var(--tomoi-violet-l)'},
         {name: 'Neutral', color: 'var(--tomoi-gray-l)'},
+        {name: 'Reflective', color: 'var(--tomoi-cyan-l)'},
         {name: 'Peaceful', color: 'var(--tomoi-green-l)'},
         {name: 'Lovestruck', color: 'var(--tomoi-pink-l)'},
     ]
 
     const providerValue = useMemo(() => ({ editor }), [editor])
+
+    useEffect(() => {
+        if (!editor || !selectedEntry) return;
+
+        if (selectedEntry){
+            try {
+                editor.commands.setContent(JSON.parse(selectedEntry.content))
+                setTitle(selectedEntry.title)
+                setFeeling(selectedEntry.feeling)
+                setTags(selectedEntry.tags)
+            } catch (err) {
+                editor.commands.setContent("")
+                setTitle("")
+                setFeeling("Neutral")
+                setTags([])
+            }
+        }
+    }, [selectedEntry, editor, mode])
 
     const editorState = useEditorState({
         editor,
@@ -146,51 +171,51 @@ function EntryEditor({isOpen, onClose}) {
 
     const handleSave = async (e) => {
         e.preventDefault()
-        const dateCreated = dayjs(Date.now()).format('YYYY-MM-DD HH:mm:ss');
-        const lastEdited = dateCreated;
-
-        console.log(dateCreated)
+        const dateCreated = dayjs(selectedDate).format('YYYY-MM-DD HH:mm:ss');
+        const lastEdited = dayjs(Date.now()).format('YYYY-MM-DD HH:mm:ss');
+        const author = user.userID
+        const content =  JSON.stringify(editorContent)
 
         if (title.length === 0) {
             toast.error('Please enter a title for your entry!');
             return;
-        } else if (!editorContent.content) {
+        } else if (editor.getText().length === 0) {
             toast.error('You need to fill up your entry!');
             return;
         } else {
+
             try {
-                const response = await fetch('http://localhost:8080/create-entry', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ title, author: user?.userID, content: JSON.stringify(editorContent), feeling, dateCreated, lastEdited }),
-                });
-                const data = await response.json();
-                if (response.ok) {
-                    toast.success(data.message);
-                } else {
-                    toast.error(data.error);
-                }
-            } catch (error) {
-                console.error('Error creating entry:', error);
-                alert('Error creating entry');
+                const API_URL = import.meta.env.VITE_API_URL
+                const response = await axios.post(`${API_URL}/create-entry`, {
+                    title,
+                    author,
+                    content,
+                    feeling,
+                    dateCreated,
+                    lastEdited,
+                    tags
+                })
+                const data = await response.data;
+                toast.success(data.message);
+                await refreshEntries();
+            } catch (err) {
+                console.error('Error creating entry:', err);
             }
         }
         onClose();
     }
 
+    
 
     return (
         <>
             <Modal isOpen={isOpen} onClose={handleSave}>
                 <div className='relative min-h-[65vh] flex flex-col gap-2 justify-start items-start'>
                     <div className='absolute -top-4 right-0 text-xs italic text-[var(--tomoi-gray-d)]'>It will autosave when you close it.</div>
-                    <textarea contentEditable placeholder='Entry Title' className='resize-none outline-none overflow-hidden p-1 border-b-1 border-[var(--tomoi-gray)] text-5xl flex font-bold w-full field-sizing-content'
+                    <textarea value={title} placeholder='Entry Title' className='resize-none outline-none overflow-hidden p-1 border-b-1 border-[var(--tomoi-gray)] text-5xl flex font-bold w-full field-sizing-content'
                     onChange={(e) => setTitle(e.target.value)}></textarea>
                     <div className='italic text-[var(--tomoi-gray-d)] flex justify-between w-full'>
-                        <div>Last edited April 1, 2026 4:09 PM</div>
-                        <div>#1</div>
+                        <div>Last edited {lastEditedDate}</div>
                     </div>
                     <div className='text-[var(--tomoi-black)] flex w-full field-sizing-content items-center'>
                         <div className='flex w-full bg-[var(--tomoi-gray-l)] px-3 py-2  rounded-lg border-1 border-dashed items-start justify-between items-stretch'>
@@ -226,7 +251,6 @@ function EntryEditor({isOpen, onClose}) {
                                     value={tags}
                                     onChange={(event, newValue) => {
                                         setTags(newValue);
-                                        console.log(newValue);
                                     }}
                                     limitTags={5}
                                     options={[]}
@@ -243,24 +267,24 @@ function EntryEditor({isOpen, onClose}) {
                                             },
                                         }
                                     }}
-                                    slotProps={{
-                                        chip: {
-                                            sx:{
-                                                backgroundColor: 'var(--tomoi-gray-l)',
-                                                fontFamily: 'Kulim Park',
-                                                borderRadius: '0px',
-                                                border: '1px dashed var(--tomoi-black)',
-                                                fontSize: '.875em',
-                                            }
-                                        }
-                                    }}  
-                                    renderValues={(value, getTagProps) =>
-                                        value.map((option, index) => (
-                                            <Chip label={option} {...getTagProps({ index })} />
-                                        ))
+                                    renderValue={(value, getTagProps) =>
+                                        value.map((option, index) => {
+                                            
+                                            const {key, ...chipProps} = getTagProps({ index })
+                                            return (
+                                                <Chip key={key} label={option} {...chipProps} 
+                                                sx={{
+                                                    backgroundColor: 'var(--tomoi-gray-l)',
+                                                    fontFamily: 'Kulim Park',
+                                                    borderRadius: '0px',
+                                                    border: '1px dashed var(--tomoi-black)',
+                                                    fontSize: '.875em',
+                                                }}/>
+                                            )
+                                        })
                                     }
                                     renderInput={(params) => (
-                                        <TextField {...params} fullWidth placeholder="Add tags" 
+                                        <TextField {...params} fullWidth placeholder="Type and press enter" 
                                         sx={{
                                             "& input": {
                                                 fontFamily: 'Kulim Park',

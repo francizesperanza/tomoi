@@ -48,7 +48,7 @@ const generateMonthData = (date) => {
 
 
 function TomoiCalendar() {
-    const {setSelectedDate, monthEntries} = useEntry();
+    const {setSelectedDate, monthEntries, loading} = useEntry();
     const navigate = useNavigate();
     const [currentDate, setCurrentDate] = useState(dayjs(Date.now()));
     const [anchorEl, setAnchorEl] = useState(null);
@@ -67,6 +67,7 @@ function TomoiCalendar() {
         'Excited': 'var(--tomoi-orange-l)',
         'Anxious': 'var(--tomoi-violet-l)',
         'Neutral': 'var(--tomoi-gray-l)',
+        'Reflective': 'var(--tomoi-cyan-l)',
         'Peaceful': 'var(--tomoi-green-l)',
         'Lovestruck': 'var(--tomoi-pink-l)',
     }
@@ -129,7 +130,7 @@ function TomoiCalendar() {
 
   return (
     <>
-        <div className='flex flex-col grow w-full overflow-y-auto bg-white items-center rounded-xl p-4 gap-3'>
+        <div className='relative flex flex-col grow w-full overflow-y-auto bg-white items-center rounded-xl p-4 gap-3'>
             <div className='flex gap-4 items-center justify-between w-full'>
                 <div className='text-3xl font-bold hover:underline cursor-pointer' onClick={(e) => openPopover(e)}>{currentDate.format('MMMM D, YYYY')}</div>
                 <div className='flex'>
@@ -152,8 +153,9 @@ function TomoiCalendar() {
                 ))}
 
                 {dayInfo.days.map((day, index) => (
-                    <div key={index} className={'day text-center text-2xl p-2 cursor-pointer' 
-                        + (isItToday(day) ? ' text-[var(--tomoi-yellow)]' : '')
+                    <div key={index} data-text={day} className={'day text-center text-2xl p-2 cursor-pointer'
+                        + (loading ? ' text-[var(--tomoi-gray-l)]' : ' text-[var(--tomoi-black)]')
+                        + (isItToday(day) ? ' font-bold today' : '')
                         + (currentDate.date() === day ? ' outline-2 outline-dashed outline-[var(--tomoi-yellow)]' : '')
                     }
                     onClick={() => selectCurrentMonthDay(day)}

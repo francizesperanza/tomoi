@@ -6,7 +6,6 @@ import customParseFormat from "dayjs/plugin/customParseFormat";
 function TomoiStepper({stepList, onChange, value}) {
 
     const currentIndex = stepList.indexOf(value);
-    console.log(value)
 
     const start = Math.max(0, currentIndex - 1);
     const end = Math.min(stepList.length, currentIndex + 2);
@@ -14,7 +13,7 @@ function TomoiStepper({stepList, onChange, value}) {
     const stepListSlice = stepList.slice(start, end);
 
     const moveUp = () => {
-        const nextIndex = (currentIndex - 1 + stepList.length) % stepList.length;(currentIndex + 1) % stepList.length;
+        const nextIndex = (currentIndex - 1 + stepList.length) % stepList.length;
         onChange(stepList[nextIndex]);
     }
 

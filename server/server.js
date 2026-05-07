@@ -135,16 +135,17 @@ app.get('/check-email', (req, res) => {
 app.get('/session-check', (req, res) => {
     if (!req.session.user)
         return res.status(401).json({error: "User is not logged in."});
-
     return res.json(req.session.user);
 })
 
 // ENTRY ENDPOINTS
 
 app.post('/create-entry', (req, res) => {
-    const { title, author, content, feeling, dateCreated, lastEdited } = req.body;
+    const { title, author, content, feeling, dateCreated, lastEdited, tags} = req.body;
     const uuid = createBinaryUUID();
     const encryptedContent = encrypt(process.env.ALGORITHM.toString(), Buffer.from(process.env.ENCRYPT_SECRET, 'hex'), content);
+
+    // creating entry
     const query = 'INSERT INTO posts (postID, author, title, content, feeling, dateCreated, lastEdited) VALUES (?, ?, ?, ?, ?, ?, ?)';
     db.query(query, [uuid.buffer, toBinaryUUID(author), title, encryptedContent, feeling, dateCreated, lastEdited], (err, result) => {
         if (err) {
@@ -153,9 +154,42 @@ app.post('/create-entry', (req, res) => {
             }
             console.error('Error inserting post:', err);
             res.status(500).json({ error: 'Error inserting post' });
-        } else {
-            res.status(201).json({ message: 'Post created successfully' });
         }
+
+        // insert tags
+
+        const tagValues = tags.map(tag => [createBinaryUUID().buffer, tag])
+        const tagInsertQuery = `INSERT IGNORE INTO tags (tagID, tagName) VALUES ?`
+
+        db.query(tagInsertQuery, [tagValues], (err) => {
+            if (err) {
+                return res.status(500).json({ error: 'Error inserting tags' });
+            }
+
+            // get new tags
+
+            const tagSelectQuery = `SELECT tagID, tagName FROM tags WHERE tagName IN (?)`
+            
+            db.query (tagSelectQuery, [tags], (err, result) => {
+                if (err) {
+                    return res.status(500).json({ error: 'Error selecting tags' });
+                }
+                
+                const pairValues = result.map(tag => [uuid.buffer, tag.tagID])
+                // insert into junction table
+
+                const junctionInsertQuery = `INSERT IGNORE INTO post_tags (postID, tagID) VALUES ?`
+                
+                db.query (junctionInsertQuery, [pairValues], (err) => {
+                    if (err) {
+                        return res.status(500).json({ error: 'Error inserting into junction table post_tags'})
+                    }
+
+                    res.status(201).json({message: 'Entry created successfully'})
+                })
+            }) 
+
+        })
     });
 })
 
@@ -166,7 +200,7 @@ app.get('/get-current-month-entries', (req, res) => {
         if (err) {
             console.error('Error fetching current month entries', err);
             res.status(500).json({ error: 'Error fetching current month entries' });
-        } else {;
+        } else {
             res.json(result);
         }
     });
@@ -183,7 +217,39 @@ app.get('/get-selected-date-entry', (req, res) => {
             if (result.length < 1) {
                 return res.json(result);
             }
-            res.json(result[0]);
+            
+            const postNumberQuery = `SELECT postNumber FROM (
+                                        SELECT postID, ROW_NUMBER() OVER (ORDER BY dateCreated ASC) AS postNumber FROM posts
+                                    ) ranked
+                                    WHERE postID = ?`
+
+            db.query(postNumberQuery, [result[0].postID], (err, postNumber) => {
+                if (err) {
+                    console.error('Error getting post number', err);
+                    res.status(500).json({error: 'Error getting post number'})
+                }
+
+                const tagSelectQuery = `SELECT tagName FROM post_tags JOIN tags ON post_tags.tagID = tags.tagID WHERE post_tags.postID = ?`
+
+                db.query(tagSelectQuery, [result[0].postID], (err, tags) => {
+                    if (err) {
+                        console.error('Error getting tags', err);
+                        res.status(500).json({error: 'Error getting tags'})
+                    }
+                    
+                    result[0].content = decrypt(process.env.ALGORITHM.toString(), Buffer.from(process.env.ENCRYPT_SECRET, 'hex'), result[0].content)
+                    
+                    const updatedEntry = {
+                        ...result[0],
+                        postNumber: postNumber[0].postNumber,
+                        tags: tags.map(tag => tag.tagName)
+                    }
+
+                    res.json(updatedEntry);
+                })
+
+            })
+            
         }
     });
 });
