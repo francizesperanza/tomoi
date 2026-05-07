@@ -14,6 +14,7 @@ import { Popover, Chip, Autocomplete, TextField} from '@mui/material';
 import dayjs, {Dayjs} from 'dayjs';
 import { useEntry } from './EntryProvider';
 import axios from 'axios'
+import LoadingComponent from './LoadingComponent';
 
 function EntryEditor({isOpen, onClose, mode}) {
     const {user} = useAuth();
@@ -26,6 +27,7 @@ function EntryEditor({isOpen, onClose, mode}) {
     const [tags, setTags] = useState([]);
     const [editorContent, setEditorContent] = useState('');
     const [title, setTitle] = useState('');
+    const [loading, setLoading] = useState(false);
 
     const lastEditedDate = mode === 'new' ? dayjs(new Date()).format('MMMM DD, YYYY hh:mm A') : dayjs(selectedEntry.lastEdited).format('MMMM DD, YYYY hh:mm A')
   
@@ -171,6 +173,8 @@ function EntryEditor({isOpen, onClose, mode}) {
 
     const handleSave = async (e) => {
         e.preventDefault()
+
+
         const dateCreated = dayjs(selectedDate).format('YYYY-MM-DD HH:mm:ss');
         const lastEdited = dayjs(Date.now()).format('YYYY-MM-DD HH:mm:ss');
         const author = user.userID
@@ -183,25 +187,55 @@ function EntryEditor({isOpen, onClose, mode}) {
             toast.error('You need to fill up your entry!');
             return;
         } else {
+            if (mode === 'new'){    
+                try {
+                    setLoading(true)
+                    const API_URL = import.meta.env.VITE_API_URL
+                    const response = await axios.post(`${API_URL}/create-entry`, {
+                        title,
+                        author,
+                        content,
+                        feeling,
+                        dateCreated,
+                        lastEdited,
+                        tags
+                    })
+                    const data = await response.data;
+                    toast.success(data.message);
+                    await refreshEntries();
+                } catch (err) {
+                    console.error('Error creating entry:', err);
+                }
+            } else if (mode === 'edit') {
+                if (
+                    selectedEntry.title === title &&
+                    selectedEntry.content === content &&
+                    selectedEntry.feeling === feeling &&
+                    JSON.stringify(selectedEntry.tags) === JSON.stringify(tags)
+                )
+                return onClose();
 
-            try {
-                const API_URL = import.meta.env.VITE_API_URL
-                const response = await axios.post(`${API_URL}/create-entry`, {
-                    title,
-                    author,
-                    content,
-                    feeling,
-                    dateCreated,
-                    lastEdited,
-                    tags
-                })
-                const data = await response.data;
-                toast.success(data.message);
-                await refreshEntries();
-            } catch (err) {
-                console.error('Error creating entry:', err);
+                try {
+                    setLoading(true)
+                    const API_URL = import.meta.env.VITE_API_URL
+                    const response = await axios.put(`${API_URL}/edit-entry`, {
+                        postID: selectedEntry.postID,
+                        title: title,
+                        content: content,
+                        feeling: feeling,
+                        lastEdited: lastEdited,
+                        tags: tags
+                    })
+                    const data = await response.data;
+                    console.log(response.data);
+                    toast.success(data.message);
+                    await refreshEntries();
+                } catch (err) {
+                    console.error('Error updating entry:', err);
+                }
             }
         }
+        setLoading(false)
         onClose();
     }
 
@@ -209,6 +243,10 @@ function EntryEditor({isOpen, onClose, mode}) {
 
     return (
         <>
+            {loading &&
+            <div className='pointer-events-auto loading fixed rounded-xl inset-0 items-center justify-center flex bg-[var(--tomoi-white)]/50 z-100 text-2xl font-extrabold'>
+                <LoadingComponent></LoadingComponent>
+            </div>}
             <Modal isOpen={isOpen} onClose={handleSave}>
                 <div className='relative min-h-[65vh] flex flex-col gap-2 justify-start items-start'>
                     <div className='absolute -top-4 right-0 text-xs italic text-[var(--tomoi-gray-d)]'>It will autosave when you close it.</div>

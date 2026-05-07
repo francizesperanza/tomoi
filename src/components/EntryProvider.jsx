@@ -39,7 +39,6 @@ function EntryProvider ({children}) {
                 }
             })
             const data = await response.data;
-            console.log(data)
             setSelectedEntry(data)
         } catch (err) {
             if (err.response?.status === 401) {
@@ -109,7 +108,8 @@ function EntryProvider ({children}) {
             selectedEntry, 
             setSelectedEntry,
             refreshEntries,
-            loading
+            loading,
+            setLoading
             }}>
             {children}
         </EntryContext.Provider>

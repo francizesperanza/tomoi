@@ -193,6 +193,63 @@ app.post('/create-entry', (req, res) => {
     });
 })
 
+app.put('/edit-entry', (req, res) => {
+    const { postID, title, content, feeling, lastEdited, tags} = req.body;
+    const idBuffer = Buffer.from(postID.data);
+    const encryptedContent = encrypt(process.env.ALGORITHM.toString(), Buffer.from(process.env.ENCRYPT_SECRET, 'hex'), content);
+
+    // creating entry
+    const query = 'UPDATE posts SET title = ?, content = ?, feeling = ?, lastEdited = ? WHERE postID = ?';
+    db.query(query, [title, encryptedContent, feeling, lastEdited, idBuffer], (err, result) => {
+        if (err) {
+            console.error('Error updating post:', err);
+            return res.status(500).json({ error: 'Error updating post' });
+        }
+
+        // delete tags
+
+        const tagValues = tags.map(tag => [createBinaryUUID().buffer, tag])
+        const tagDeleteQuery = `DELETE FROM post_tags WHERE postID = ?`
+
+        db.query(tagDeleteQuery, [idBuffer], (err) => {
+            if (err) {
+                return res.status(500).json({ error: 'Error deleting tags' });
+            }
+
+            // insert tags
+            const tagInsertQuery = `INSERT IGNORE INTO tags (tagID, tagName) VALUES ?`
+            db.query(tagInsertQuery, [tagValues], (err) => {
+                if (err) {
+                    return res.status(500).json({ error: 'Error inserting tags' });
+                }
+
+                // get new tags
+
+                const tagSelectQuery = `SELECT tagID, tagName FROM tags WHERE tagName IN (?)`
+                
+                db.query (tagSelectQuery, [tags], (err, result) => {
+                    if (err) {
+                        return res.status(500).json({ error: 'Error selecting tags' });
+                    }
+                    
+                    const pairValues = result.map(tag => [idBuffer, tag.tagID])
+                    // insert into junction table
+
+                    const junctionInsertQuery = `INSERT IGNORE INTO post_tags (postID, tagID) VALUES ?`
+                    
+                    db.query (junctionInsertQuery, [pairValues], (err) => {
+                        if (err) {
+                            return res.status(500).json({ error: 'Error inserting into junction table post_tags'})
+                        }
+
+                        res.status(201).json({message: 'Entry edited successfully'})
+                    })
+                }) 
+            })
+        })
+    });
+})
+
 app.get('/get-current-month-entries', (req, res) => {
     const { userID, startDate, endDate} = req.query;
     const query = 'SELECT * FROM posts WHERE author = ? AND dateCreated >= ? AND dateCreated < ?';
