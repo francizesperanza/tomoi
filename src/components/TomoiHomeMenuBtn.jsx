@@ -79,7 +79,6 @@ function TomoiHomeMenuBtn({icon, btnName, colSpan, rowSpan, bgColor, textColor, 
     }
 
     const onButtonHover = (e) => {
-        console.log('hovering')
         animate(e.currentTarget.querySelector('.btn-text'),{
             scale: [
                 { to: 1.1, duration: 100},
