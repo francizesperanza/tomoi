@@ -12,7 +12,10 @@ import { Placeholder, CharacterCount} from '@tiptap/extensions'
 import { animate, stagger, createScope, set, random, createTimeline} from 'animejs'
 import { useEntry } from './components/EntryProvider';
 import LoadingComponent from './components/LoadingComponent';
+import axios from "axios";
 import dayjs, {Dayjs} from 'dayjs';
+import { toast} from 'react-hot-toast'
+
 
 import isLeapYear from "dayjs/plugin/isLeapYear";
 import localeData from "dayjs/plugin/localeData";
@@ -25,7 +28,7 @@ dayjs.extend(customParseFormat);
 
 
 function Journal() {
-    const {selectedEntry, loading} = useEntry();
+    const {selectedEntry, loading, setLoading, refreshEntries} = useEntry();
     const navigate = useNavigate();
     const [anchorEl, setAnchorEl] = useState(null);
     const [isJEditorOpen, setIsJEditorOpen] = useState(false);
@@ -56,6 +59,7 @@ function Journal() {
     }
     
     const closePopover = () => {
+        document.activeElement?.blur()
         setAnchorEl(null);
     }
 
@@ -132,6 +136,26 @@ function Journal() {
             ]
         });
 
+    }
+
+    const onHandleDelete = async() => {
+        try {
+            setLoading(true)
+            const API_URL = import.meta.env.VITE_API_URL
+            const response = await axios.delete(`${API_URL}/delete-entry`, {
+                data: {
+                    postID: selectedEntry.postID,
+                    tags: selectedEntry.tags
+                }
+            })
+            const data = await response.data;
+            toast.success(data.message);
+            await refreshEntries();
+        } catch (err) {
+            console.error('Error deleting entry:', err);
+        } finally {
+            setLoading(false)
+        }
     }
 
     return (
@@ -243,7 +267,7 @@ function Journal() {
                         Transfer Entry
                         <ArrowLeftRight className='icon'></ArrowLeftRight>
                     </div>
-                    <div onMouseEnter={onButtonHover} onMouseLeave={onButtonLeave} className='option px-4 py-2 text-[var(--tomoi-red)] hover:font-bold flex items-center justify-between overflow-hidden'>
+                    <div onMouseEnter={onButtonHover} onMouseLeave={onButtonLeave} onClick={() => {onHandleDelete(); closePopover()}} className='option px-4 py-2 text-[var(--tomoi-red)] hover:font-bold flex items-center justify-between overflow-hidden'>
                         Delete
                         <Trash className='icon'></Trash>
                     </div>

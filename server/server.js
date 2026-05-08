@@ -250,6 +250,56 @@ app.put('/edit-entry', (req, res) => {
     });
 })
 
+app.delete('/delete-entry', (req, res) => {
+    const { postID, tags} = req.body;
+    const idBuffer = Buffer.from(postID.data);
+
+    // query exclusive tags
+
+    const tagExclusiveQuery = `SELECT pt.tagID FROM post_tags pt WHERE pt.postID = ? AND NOT EXISTS (
+                                SELECT 1 FROM post_tags pt2 WHERE pt2.tagID = pt.tagID AND pt2.postID != pt.postID
+                            )`
+
+    db.query(tagExclusiveQuery, [idBuffer], (err, exclusiveTags) => {
+        if (err) {
+            return res.status(500).json({ error: 'Error selecting exclusive tags' });
+        }
+
+        if (exclusiveTags.length > 0) {
+            // delete tags
+            const postTagsDeleteQuery = `DELETE FROM post_tags WHERE postID = ?`
+            db.query(postTagsDeleteQuery, [idBuffer], (err) => {
+                if (err) {
+                    return res.status(500).json({ error: 'Error deleting from junction table' });
+                }
+
+                // get new tags
+
+                const tagArray = exclusiveTags.map(tag => tag.tagID)
+                const tagDeleteQuery = `DELETE FROM tags WHERE tagID IN (?)`
+                
+                db.query (tagDeleteQuery, [tagArray], (err, result) => {
+                    if (err) {
+                        return res.status(500).json({ error: 'Error deleting tags' });
+                    }
+
+                    
+                })
+            })
+        }
+        
+        // delete entry
+        const query = 'DELETE FROM posts WHERE postID = ?';
+        db.query(query, [idBuffer], (err) => {
+            if (err) {
+                console.error('Error deleting post:', err);
+                return res.status(500).json({ error: 'Error deleting post' });
+            }
+        res.status(201).json({message: 'Entry deleted successfully'})
+        }) 
+    });
+})
+
 app.get('/get-current-month-entries', (req, res) => {
     const { userID, startDate, endDate} = req.query;
     const query = 'SELECT * FROM posts WHERE author = ? AND dateCreated >= ? AND dateCreated < ?';
