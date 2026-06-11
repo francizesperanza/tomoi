@@ -29,7 +29,7 @@ function EntryEditor({isOpen, onClose, mode}) {
     const [title, setTitle] = useState('');
     const [loading, setLoading] = useState(false);
 
-    const lastEditedDate = mode === 'new' ? dayjs(new Date()).format('MMMM DD, YYYY hh:mm A') : dayjs(selectedEntry.lastEdited).format('MMMM DD, YYYY hh:mm A')
+    const lastEditedDate = mode === 'new' ? dayjs(new Date()).format('MMMM DD, YYYY hh:mm A') : dayjs(selectedEntry?.lastEdited).format('MMMM DD, YYYY hh:mm A')
   
 
     const handleFeelingChange = (event) => {
@@ -97,22 +97,21 @@ function EntryEditor({isOpen, onClose, mode}) {
     const providerValue = useMemo(() => ({ editor }), [editor])
 
     useEffect(() => {
-        if (!editor || !selectedEntry) return;
+        if (!editor) return;
 
         if (selectedEntry){
-            try {
-                editor.commands.setContent(JSON.parse(selectedEntry.content))
-                setTitle(selectedEntry.title)
-                setFeeling(selectedEntry.feeling)
-                setTags(selectedEntry.tags)
-            } catch (err) {
-                editor.commands.setContent("")
-                setTitle("")
-                setFeeling("Neutral")
+            editor.commands.setContent(JSON.parse(selectedEntry.content))
+            setTitle(selectedEntry.title)
+            setFeeling(selectedEntry.feeling)
+            if (selectedEntry.tags.length > 0)
                 setTags([])
-            }
+        } else {
+            editor.commands.setContent("")
+            setTitle("")
+            setFeeling("Neutral")
+            setTags([])
         }
-    }, [selectedEntry, editor, mode])
+    }, [selectedEntry, mode])
 
     const editorState = useEditorState({
         editor,
@@ -174,11 +173,11 @@ function EntryEditor({isOpen, onClose, mode}) {
     const handleSave = async (e) => {
         e.preventDefault()
 
-
         const dateCreated = dayjs(selectedDate).format('YYYY-MM-DD HH:mm:ss');
         const lastEdited = dayjs(Date.now()).format('YYYY-MM-DD HH:mm:ss');
         const author = user.userID
         const content =  JSON.stringify(editorContent)
+        const contentText = editor.getText()
 
         if (title.length === 0) {
             toast.error('Please enter a title for your entry!');
@@ -195,6 +194,7 @@ function EntryEditor({isOpen, onClose, mode}) {
                         title,
                         author,
                         content,
+                        contentText,
                         feeling,
                         dateCreated,
                         lastEdited,
@@ -205,6 +205,9 @@ function EntryEditor({isOpen, onClose, mode}) {
                     await refreshEntries();
                 } catch (err) {
                     console.error('Error creating entry:', err);
+                    console.log(err.response);
+                    console.log(err.response?.data);
+                    console.log(err.response?.status);
                 }
             } else if (mode === 'edit') {
                 if (
@@ -214,32 +217,38 @@ function EntryEditor({isOpen, onClose, mode}) {
                     JSON.stringify(selectedEntry.tags) === JSON.stringify(tags)
                 )
                 return onClose();
-
+                console.log(JSON.stringify(selectedEntry.tags),JSON.stringify(tags))
                 try {
                     setLoading(true)
                     const API_URL = import.meta.env.VITE_API_URL
                     const response = await axios.put(`${API_URL}/edit-entry`, {
                         postID: selectedEntry.postID,
                         title: title,
+                        contentID: selectedEntry.contentID,
                         content: content,
+                        contentText: contentText,
                         feeling: feeling,
                         lastEdited: lastEdited,
                         tags: tags
                     })
                     const data = await response.data;
+                    console.log('edit done')
+                    console.log(selectedEntry)
                     console.log(response.data);
                     toast.success(data.message);
                     await refreshEntries();
                 } catch (err) {
                     console.error('Error updating entry:', err);
+                    console.log(err);
+                    console.log(err.response);
+                    console.log(err.response?.data);
+                    console.log(err.response?.status);
                 }
             }
         }
         setLoading(false)
         onClose();
     }
-
-    
 
     return (
         <>

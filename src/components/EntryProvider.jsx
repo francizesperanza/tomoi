@@ -22,7 +22,7 @@ function EntryProvider ({children}) {
     const [monthEntries, setMonthEntries] = useState([]);
     const [loading, setLoading] = useState(false);
 
-    const getSelectedDateEntry = async () => {
+    const getSelectedDateEntry2 = async () => {
         const startDate = selectedDate.startOf('day').format('YYYY-MM-DD');
         const endDate = selectedDate.add(1, 'day').startOf('day').format('YYYY-MM-DD');
         const userID = user.userID
@@ -40,6 +40,7 @@ function EntryProvider ({children}) {
             })
             const data = await response.data;
             setSelectedEntry(data)
+            console.log(data)
         } catch (err) {
             if (err.response?.status === 401) {
                 setSelectedEntry(null);
@@ -49,6 +50,16 @@ function EntryProvider ({children}) {
         } finally {
             setLoading(false);
         }
+    }
+
+    const getSelectedDateEntry = () => {
+        const startDate = selectedDate.startOf('day').format('YYYY-MM-DD');
+        const endDate = selectedDate.add(1, 'day').startOf('day').format('YYYY-MM-DD');
+        const userID = user.userID
+        
+        const entry = monthEntries.find(entry => entry.dateCreated.split('T')[0] === startDate)
+
+        setSelectedEntry(entry ?? null)
     }
 
     const getCurrentMonthEntries = async () => {
@@ -70,6 +81,7 @@ function EntryProvider ({children}) {
             })
             const data = await response.data;
             setMonthEntries(data)
+            console.log("MONTHLY: ", data)
         } catch (err) {
             if (err.response?.status === 401) {
                 setSelectedEntry(null);
@@ -83,17 +95,19 @@ function EntryProvider ({children}) {
 
     const refreshEntries = async () => {
         await Promise.all([
-            getSelectedDateEntry(),
             getCurrentMonthEntries()
         ]);
     }
 
     const monthKey = selectedDate.format('YYYY-MM')
-    const dayKey = selectedDate.format('YYYY-MM-DD')
 
     useEffect(() => {
-        getSelectedDateEntry();
-    }, [dayKey])
+        const startDate = selectedDate.startOf('day').format('YYYY-MM-DD');
+        
+        const entry = monthEntries.find(entry => entry.dateCreated.split('T')[0] === startDate)
+
+        setSelectedEntry(entry ?? null)
+    }, [selectedDate, monthEntries])
 
     useEffect(() => {
         getCurrentMonthEntries();

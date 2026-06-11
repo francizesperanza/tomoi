@@ -91,7 +91,7 @@ function Journal() {
     })
 
     useEffect(() => {
-        if (selectedEntry){
+        if (selectedEntry != undefined){
             try {
                 editor.commands.setContent(JSON.parse(selectedEntry.content))
                 setHasEntry(true)
@@ -99,6 +99,9 @@ function Journal() {
                 editor.commands.setContent("empty")
                 setHasEntry(false)
             }
+        } else {
+            editor.commands.setContent("empty")
+            setHasEntry(false)
         }
     }, [selectedEntry])
 
@@ -145,6 +148,7 @@ function Journal() {
             const response = await axios.delete(`${API_URL}/delete-entry`, {
                 data: {
                     postID: selectedEntry.postID,
+                    contentID: selectedEntry.contentID,
                     tags: selectedEntry.tags
                 }
             })
@@ -194,9 +198,10 @@ function Journal() {
                                         }}>{selectedEntry?.feeling}</div>
                                         <div className='w-full flex gap-2 items-center'>
                                             {
-                                                selectedEntry?.tags?.slice(0,5).map((tag, index) => (
-                                                    <div key={index} className='text-lg px-2 border-1 border-dashed border-[var(--tomoi-gray-d)] bg-[var(--tomoi-gray-l)] w-fit'>{tag}</div>
-                                                ))
+                                                selectedEntry?.tags?.slice(0,5).map((tag, index) => {
+                                                    if (tag)
+                                                        return <div key={index} className='text-lg px-2 border-1 border-dashed border-[var(--tomoi-gray-d)] bg-[var(--tomoi-gray-l)] w-fit'>{tag}</div>
+                                                })
                                             }
                                             {
                                                 selectedEntry?.tags?.length > 5 && <div className='bg-[var(--tomoi-gray-l)] rounded-full px-2 py-1'>+{selectedEntry.tags.length - 5}</div>
@@ -274,7 +279,7 @@ function Journal() {
                 </div>
             </Popover>
 
-            <EntryEditor isOpen={isJEditorOpen} onClose={() => setIsJEditorOpen(false)} mode={mode}></EntryEditor>
+            <EntryEditor isOpen={isJEditorOpen} onClose={() => {setIsJEditorOpen(false)}} mode={mode}></EntryEditor>
         </>
     )
 }

@@ -141,13 +141,13 @@ app.get('/session-check', (req, res) => {
 // ENTRY ENDPOINTS
 
 app.post('/create-entry', (req, res) => {
-    const { title, author, content, feeling, dateCreated, lastEdited, tags} = req.body;
+    const { title, author, content, contentText, feeling, dateCreated, lastEdited, tags} = req.body;
     const uuid = createBinaryUUID();
-    const encryptedContent = encrypt(process.env.ALGORITHM.toString(), Buffer.from(process.env.ENCRYPT_SECRET, 'hex'), content);
-
+    const contentUuid = createBinaryUUID();
+    console.log(tags)
     // creating entry
-    const query = 'INSERT INTO posts (postID, author, title, content, feeling, dateCreated, lastEdited) VALUES (?, ?, ?, ?, ?, ?, ?)';
-    db.query(query, [uuid.buffer, toBinaryUUID(author), title, encryptedContent, feeling, dateCreated, lastEdited], (err, result) => {
+    const query = 'INSERT INTO posts (postID, author, title, contentID, feeling, dateCreated, lastEdited) VALUES (?, ?, ?, ?, ?, ?, ?)';
+    db.query(query, [uuid.buffer, toBinaryUUID(author), title, contentUuid.buffer, feeling, dateCreated, lastEdited], (err, result) => {
         if (err) {
             if (err.code === 'ER_DUP_ENTRY') {
                 return res.status(400).json({ error: 'Post already exists' });
@@ -156,68 +156,25 @@ app.post('/create-entry', (req, res) => {
             res.status(500).json({ error: 'Error inserting post' });
         }
 
-        // insert tags
-
-        const tagValues = tags.map(tag => [createBinaryUUID().buffer, tag])
-        const tagInsertQuery = `INSERT IGNORE INTO tags (tagID, tagName) VALUES ?`
-
-        db.query(tagInsertQuery, [tagValues], (err) => {
+        const contentQuery = 'INSERT INTO contents (contentID, content, contentText) VALUES (?, ?, ?)';
+        db.query(contentQuery, [contentUuid.buffer, content, contentText], (err, contentRes) => {
             if (err) {
-                return res.status(500).json({ error: 'Error inserting tags' });
-            }
-
-            // get new tags
-
-            const tagSelectQuery = `SELECT tagID, tagName FROM tags WHERE tagName IN (?)`
-            
-            db.query (tagSelectQuery, [tags], (err, result) => {
-                if (err) {
-                    return res.status(500).json({ error: 'Error selecting tags' });
+                if (err.code === 'ER_DUP_ENTRY') {
+                    return res.status(400).json({ error: 'Content already exists' });
                 }
-                
-                const pairValues = result.map(tag => [uuid.buffer, tag.tagID])
-                // insert into junction table
-
-                const junctionInsertQuery = `INSERT IGNORE INTO post_tags (postID, tagID) VALUES ?`
-                
-                db.query (junctionInsertQuery, [pairValues], (err) => {
-                    if (err) {
-                        return res.status(500).json({ error: 'Error inserting into junction table post_tags'})
-                    }
-
-                    res.status(201).json({message: 'Entry created successfully'})
-                })
-            }) 
-
-        })
-    });
-})
-
-app.put('/edit-entry', (req, res) => {
-    const { postID, title, content, feeling, lastEdited, tags} = req.body;
-    const idBuffer = Buffer.from(postID.data);
-    const encryptedContent = encrypt(process.env.ALGORITHM.toString(), Buffer.from(process.env.ENCRYPT_SECRET, 'hex'), content);
-
-    // creating entry
-    const query = 'UPDATE posts SET title = ?, content = ?, feeling = ?, lastEdited = ? WHERE postID = ?';
-    db.query(query, [title, encryptedContent, feeling, lastEdited, idBuffer], (err, result) => {
-        if (err) {
-            console.error('Error updating post:', err);
-            return res.status(500).json({ error: 'Error updating post' });
-        }
-
-        // delete tags
-
-        const tagValues = tags.map(tag => [createBinaryUUID().buffer, tag])
-        const tagDeleteQuery = `DELETE FROM post_tags WHERE postID = ?`
-
-        db.query(tagDeleteQuery, [idBuffer], (err) => {
-            if (err) {
-                return res.status(500).json({ error: 'Error deleting tags' });
+                console.error('Error creating content:', err);
+                res.status(500).json({ error: 'Error creating content' });
+            }
+            
+            if (tags.length == 0) {
+                return res.status(201).json({message: 'Entry created successfully'})
             }
 
             // insert tags
+
+            const tagValues = tags.map(tag => [createBinaryUUID().buffer, tag])
             const tagInsertQuery = `INSERT IGNORE INTO tags (tagID, tagName) VALUES ?`
+
             db.query(tagInsertQuery, [tagValues], (err) => {
                 if (err) {
                     return res.status(500).json({ error: 'Error inserting tags' });
@@ -232,7 +189,7 @@ app.put('/edit-entry', (req, res) => {
                         return res.status(500).json({ error: 'Error selecting tags' });
                     }
                     
-                    const pairValues = result.map(tag => [idBuffer, tag.tagID])
+                    const pairValues = result.map(tag => [uuid.buffer, tag.tagID])
                     // insert into junction table
 
                     const junctionInsertQuery = `INSERT IGNORE INTO post_tags (postID, tagID) VALUES ?`
@@ -242,17 +199,92 @@ app.put('/edit-entry', (req, res) => {
                             return res.status(500).json({ error: 'Error inserting into junction table post_tags'})
                         }
 
-                        res.status(201).json({message: 'Entry edited successfully'})
+                        res.status(201).json({message: 'Entry created successfully'})
                     })
                 }) 
+
+            })
+
+        })
+
+    });
+    
+})
+
+app.put('/edit-entry', (req, res) => {
+    const { postID, title, contentID, content, contentText, feeling, lastEdited, tags} = req.body;
+    const idBuffer = Buffer.from(postID.data);
+    const contentIdBuffer = Buffer.from(contentID.data);
+
+    // editing entry
+    const query = 'UPDATE posts SET title = ?, feeling = ?, lastEdited = ? WHERE postID = ?';
+    db.query(query, [title, feeling, lastEdited, idBuffer], (err, result) => {
+        if (err) {
+            console.error('Error updating post:', err);
+            return res.status(500).json({ error: 'Error updating post' });
+        }
+
+        const contentQuery = 'UPDATE contents SET content = ?, contentText = ? WHERE contentID = ?';
+        db.query(contentQuery, [content, contentText, contentIdBuffer], (err, contentRes) => {
+            if (err) {
+                console.error('Error updating content:', err);
+                return res.status(500).json({ error: 'Error updating content' });
+            }
+
+            if (tags.length == 0) {
+                return res.status(201).json({message: 'Entry edited successfully'})
+            }
+
+            // delete tags
+
+            const tagValues = tags.map(tag => [createBinaryUUID().buffer, tag])
+            const tagDeleteQuery = `DELETE FROM post_tags WHERE postID = ?`
+
+            db.query(tagDeleteQuery, [idBuffer], (err) => {
+                if (err) {
+                    return res.status(500).json({ error: 'Error deleting tags' });
+                }
+
+                // insert tags
+                const tagInsertQuery = `INSERT IGNORE INTO tags (tagID, tagName) VALUES ?`
+                db.query(tagInsertQuery, [tagValues], (err) => {
+                    if (err) {
+                        return res.status(500).json({ error: 'Error inserting tags' });
+                    }
+
+                    // get new tags
+
+                    const tagSelectQuery = `SELECT tagID, tagName FROM tags WHERE tagName IN (?)`
+                    
+                    db.query (tagSelectQuery, [tags], (err, result) => {
+                        if (err) {
+                            return res.status(500).json({ error: 'Error selecting tags' });
+                        }
+                        
+                        const pairValues = result.map(tag => [idBuffer, tag.tagID])
+                        // insert into junction table
+
+                        const junctionInsertQuery = `INSERT IGNORE INTO post_tags (postID, tagID) VALUES ?`
+                        
+                        db.query (junctionInsertQuery, [pairValues], (err) => {
+                            if (err) {
+                                return res.status(500).json({ error: 'Error inserting into junction table post_tags'})
+                            }
+
+                            res.status(201).json({message: 'Entry edited successfully'})
+                        })
+                    }) 
+                })
             })
         })
+        
     });
 })
 
 app.delete('/delete-entry', (req, res) => {
-    const { postID, tags} = req.body;
+    const { postID, contentID, tags} = req.body;
     const idBuffer = Buffer.from(postID.data);
+    const contentIdBuffer = Buffer.from(contentID.data);
 
     // query exclusive tags
 
@@ -296,13 +328,44 @@ app.delete('/delete-entry', (req, res) => {
                 return res.status(500).json({ error: 'Error deleting post' });
             }
         res.status(201).json({message: 'Entry deleted successfully'})
-        }) 
+        })
     });
 })
 
 app.get('/get-current-month-entries', (req, res) => {
     const { userID, startDate, endDate} = req.query;
-    const query = 'SELECT * FROM posts WHERE author = ? AND dateCreated >= ? AND dateCreated < ?';
+    const query = `SELECT
+                        p.*,
+                        c.*,
+                        ranked.postNumber,
+                        JSON_ARRAYAGG(t.tagName) AS tags
+                    FROM posts p
+
+                    JOIN contents c
+                        ON p.contentID = c.contentID
+
+                    JOIN (
+                        SELECT
+                            postID,
+                            ROW_NUMBER() OVER (ORDER BY dateCreated ASC) AS postNumber
+                        FROM posts
+                    ) ranked
+                        ON ranked.postID = p.postID
+
+                    LEFT JOIN post_tags pt
+                        ON pt.postID = p.postID
+
+                    LEFT JOIN tags t
+                        ON t.tagID = pt.tagID
+
+                    WHERE p.author = ?
+                    AND p.dateCreated >= ?
+                    AND p.dateCreated < ?
+
+                    GROUP BY
+                        p.postID,
+                        ranked.postNumber;`
+    //const query = 'SELECT * FROM posts JOIN contents ON posts.contentID = contents.contentID WHERE author = ? AND dateCreated >= ? AND dateCreated < ?';
     db.query(query, [toBinaryUUID(userID), startDate, endDate], (err, result) => {
         if (err) {
             console.error('Error fetching current month entries', err);
@@ -315,7 +378,7 @@ app.get('/get-current-month-entries', (req, res) => {
 
 app.get('/get-selected-date-entry', (req, res) => {
     const { userID, startDate, endDate} = req.query;
-    const query = 'SELECT * FROM posts WHERE author = ? AND dateCreated >= ? AND dateCreated < ?';
+    const query = 'SELECT * FROM posts JOIN contents ON posts.contentID = contents.contentID WHERE posts.author = ? AND dateCreated >= ? AND dateCreated < ?';
     db.query(query, [toBinaryUUID(userID), startDate, endDate], (err, result) => {
         if (err) {
             console.error('Error fetching entry', err);
@@ -343,8 +406,6 @@ app.get('/get-selected-date-entry', (req, res) => {
                         console.error('Error getting tags', err);
                         res.status(500).json({error: 'Error getting tags'})
                     }
-                    
-                    result[0].content = decrypt(process.env.ALGORITHM.toString(), Buffer.from(process.env.ENCRYPT_SECRET, 'hex'), result[0].content)
                     
                     const updatedEntry = {
                         ...result[0],
