@@ -104,6 +104,8 @@ function EntryEditor({isOpen, onClose, mode}) {
             setTitle(selectedEntry.title)
             setFeeling(selectedEntry.feeling)
             if (selectedEntry.tags.length > 0)
+                setTags(selectedEntry.tags)
+            else
                 setTags([])
         } else {
             editor.commands.setContent("")
@@ -215,9 +217,11 @@ function EntryEditor({isOpen, onClose, mode}) {
                     selectedEntry.content === content &&
                     selectedEntry.feeling === feeling &&
                     JSON.stringify(selectedEntry.tags) === JSON.stringify(tags)
-                )
-                return onClose();
-                console.log(JSON.stringify(selectedEntry.tags),JSON.stringify(tags))
+                ) {
+                    return onClose();
+                    console.log(JSON.stringify(selectedEntry.tags),JSON.stringify(tags))
+                }
+                
                 try {
                     setLoading(true)
                     const API_URL = import.meta.env.VITE_API_URL
@@ -232,17 +236,10 @@ function EntryEditor({isOpen, onClose, mode}) {
                         tags: tags
                     })
                     const data = await response.data;
-                    console.log('edit done')
-                    console.log(selectedEntry)
-                    console.log(response.data);
                     toast.success(data.message);
                     await refreshEntries();
                 } catch (err) {
                     console.error('Error updating entry:', err);
-                    console.log(err);
-                    console.log(err.response);
-                    console.log(err.response?.data);
-                    console.log(err.response?.status);
                 }
             }
         }

@@ -338,7 +338,10 @@ app.get('/get-current-month-entries', (req, res) => {
                         p.*,
                         c.*,
                         ranked.postNumber,
-                        JSON_ARRAYAGG(t.tagName) AS tags
+                        CASE
+                            WHEN COUNT(t.tagName) = 0 THEN JSON_ARRAY()
+                            ELSE JSON_ARRAYAGG(t.tagName)
+                        END AS tags
                     FROM posts p
 
                     JOIN contents c
