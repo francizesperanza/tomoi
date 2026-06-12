@@ -28,13 +28,12 @@ dayjs.extend(customParseFormat);
 
 
 function Journal() {
-    const {selectedEntry, loading, setLoading, refreshEntries} = useEntry();
+    const {setSelectedEntry, selectedEntry, loading, setLoading, refreshEntries} = useEntry();
     const navigate = useNavigate();
     const [anchorEl, setAnchorEl] = useState(null);
     const [isJEditorOpen, setIsJEditorOpen] = useState(false);
     const [hasEntry, setHasEntry] = useState(false);
     const [mode, setMode] = useState("new");
-    const [favorite, setFavorite] = useState(false);
 
     const root = useRef(null);
     const scope = useRef(null);
@@ -165,21 +164,37 @@ function Journal() {
 
     }
 
-    const onHandleFavorite = (e) => {
-        animate(e.currentTarget.querySelector('.favorite'),{
-            scale: [
-                { to: 0.7, duration: 200, delay: 0},
-            ],
-            rotate: [
-                { to: 180, duration: 200}
-            ]
-        });
+    const onHandleFavorite = async(e) => {
+        try {
+            const resFavorite = !selectedEntry.isFavorite
+            animate(e.currentTarget.querySelector('.favorite'),{
+                scale: [
+                    { to: 0.7, duration: 200, delay: 0},
+                ],
+                rotate: [
+                    { to: 180, duration: 200}
+                ]
+            });
 
-        createTimer({
-            duration: 200,
-            onComplete: self => favorite ? setFavorite(false) : setFavorite(true)
-        });
+            createTimer({
+                duration: 200
+            });
 
+            const API_URL = import.meta.env.VITE_API_URL
+            const response = await axios.put(`${API_URL}/update-favorite`, {
+                postID: selectedEntry.postID,
+                favorite: resFavorite
+            })
+
+            setSelectedEntry(prev => ({
+                ...prev,
+                isFavorite: resFavorite
+            }))
+
+        } catch (err) {
+            console.error('Error updating favorite:', err);
+            console.log(err)
+        }
     }
 
     const onHandleDelete = async() => {
@@ -251,7 +266,7 @@ function Journal() {
                                                     }
                                                 </div>
                                                 {
-                                                    favorite ?
+                                                    selectedEntry?.isFavorite ?
                                                     <div onMouseEnter={onFavoriteHover} onMouseLeave={onFavoriteLeave} onClick={(e) => {e.stopPropagation(); onHandleFavorite(e)}} className='z-100 pointer-events-auto option overflow-visible hover:font-bold flex items-center justify-between overflow-hidden'>
                                                         <StarFill className='favorite size-[2em] text-[var(--tomoi-yellow)] border-dashed'></StarFill>
                                                     </div> 

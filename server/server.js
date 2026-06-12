@@ -146,8 +146,8 @@ app.post('/create-entry', (req, res) => {
     const contentUuid = createBinaryUUID();
     console.log(tags)
     // creating entry
-    const query = 'INSERT INTO posts (postID, author, title, contentID, feeling, dateCreated, lastEdited) VALUES (?, ?, ?, ?, ?, ?, ?)';
-    db.query(query, [uuid.buffer, toBinaryUUID(author), title, contentUuid.buffer, feeling, dateCreated, lastEdited], (err, result) => {
+    const query = 'INSERT INTO posts (postID, author, title, contentID, feeling, dateCreated, lastEdited, isFavorite) VALUES (?, ?, ?, ?, ?, ?, ?, ?)';
+    db.query(query, [uuid.buffer, toBinaryUUID(author), title, contentUuid.buffer, feeling, dateCreated, lastEdited, false], (err, result) => {
         if (err) {
             if (err.code === 'ER_DUP_ENTRY') {
                 return res.status(400).json({ error: 'Post already exists' });
@@ -422,5 +422,20 @@ app.get('/get-selected-date-entry', (req, res) => {
             })
             
         }
+    });
+});
+
+app.put('/update-favorite', (req, res) => {
+    const {postID, favorite} = req.body;
+
+    const idBuffer = Buffer.from(postID.data);
+    const query = 'UPDATE posts SET isFavorite = ? WHERE postID = ?';
+    db.query(query, [favorite, idBuffer], (err, result) => {
+        if (err) {
+            console.error('Error updating favorite', err);
+            res.status(500).json({ error: 'Error updating favorite' });
+        }
+
+        res.status(200).json(result);
     });
 });
