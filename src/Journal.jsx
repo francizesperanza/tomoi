@@ -2,7 +2,7 @@ import { useEffect, useState, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import TomoiCalendar from './components/TomoiCalendar';
-import { EmojiFrown, JournalText, PencilFill, ThreeDotsVertical, Star, ArrowLeftRight, Trash, StarFill } from 'react-bootstrap-icons';
+import { EmojiFrown, JournalText, PencilFill, ThreeDotsVertical, Star, ArrowLeftRight, Trash, StarFill, CalendarWeekFill, GridFill } from 'react-bootstrap-icons';
 import { duration, Popover } from '@mui/material';
 import EntryEditor from './components/EntryEditor';
 import { useEditor, EditorContent, EditorContext, useEditorState } from '@tiptap/react';
@@ -20,6 +20,7 @@ import { toast} from 'react-hot-toast'
 import isLeapYear from "dayjs/plugin/isLeapYear";
 import localeData from "dayjs/plugin/localeData";
 import customParseFormat from "dayjs/plugin/customParseFormat";
+import SearchBar from './components/SearchBar';
 
 
 dayjs.extend(isLeapYear);
@@ -34,6 +35,7 @@ function Journal() {
     const [isJEditorOpen, setIsJEditorOpen] = useState(false);
     const [hasEntry, setHasEntry] = useState(false);
     const [mode, setMode] = useState("new");
+    const [view, setView] = useState("calendar")
 
     const root = useRef(null);
     const scope = useRef(null);
@@ -223,11 +225,25 @@ function Journal() {
             <div className = 'bg-[var(--tomoi-yellow-l)]'>
                 <Navbar></Navbar>
                 <div ref={root} className='flex flex-col min-h-dvh w-full overflow-y-auto justify-center items-center'>
-                    <div className='flex justify-center items-start z-2 w-[90%] gap-4 mt-10 mb-10'>
-                        <div className='bg-[var(--tomoi-gray)] p-3 rounded-xl shadow-md/40 w-[35%]'>
+                    <div className='w-[90%] bg-[var(--tomoi-gray)] rounded-xl px-6 py-3 shadow-md/20 flex justify-between'>
+                        <div className='flex divide-x-2 divide-dashed divide-[var(--tomoi-gray)]'>
+                            <div onClick={() => setView('calendar')} className={'rounded-l-xl px-[0.7em] py-[0.4em] flex justify-center items-center group ' + (view === 'calendar' ? 'bg-[var(--tomoi-yellow)]' : 'bg-[var(--tomoi-white)]')}>
+                                <CalendarWeekFill className={'size-[1.4em] text-[var(--tomoi-gray)] ' + (view === 'calendar' ? 'text-[var(--tomoi-white)]' : 'text-[var(--tomoi-gray)] group-hover:text-[var(--tomoi-yellow)]')}></CalendarWeekFill>
+                            </div>
+                            <div onClick={() => setView('all')} className={'bg-[var(--tomoi-white)] px-[0.7em] py-[0.4em] flex justify-center items-center group ' + (view === 'all' ? 'bg-[var(--tomoi-yellow)]' : 'bg-[var(--tomoi-white)]')}>
+                                <GridFill className={'size-[1.4em] text-[var(--tomoi-gray)] ' + (view === 'all' ? 'text-[var(--tomoi-white)]' : 'text-[var(--tomoi-gray)] group-hover:text-[var(--tomoi-yellow)]') }></GridFill>
+                            </div>
+                            <div onClick={() => setView('starred')} className={'bg-[var(--tomoi-white)] rounded-r-xl px-[0.7em] py-[0.4em] flex justify-center items-center group ' + (view === 'starred' ? 'bg-[var(--tomoi-yellow)]' : 'bg-[var(--tomoi-white)]')}>
+                                <StarFill className={'size-[1.4em] text-[var(--tomoi-gray)] ' + (view === 'starred' ? 'text-[var(--tomoi-white)]' : 'text-[var(--tomoi-gray)] group-hover:text-[var(--tomoi-yellow)]')} ></StarFill>
+                            </div>
+                        </div>
+                        <SearchBar></SearchBar>
+                    </div>
+                    <div className='flex justify-center items-start z-2 w-[90%] gap-4 mt-3 mb-10'>
+                        <div className='bg-[var(--tomoi-gray)] p-3 rounded-xl shadow-md/20 w-[35%]'>
                             <TomoiCalendar></TomoiCalendar>
                         </div>
-                        <div className='relative bg-[var(--tomoi-white)] p-3 rounded-xl shadow-md/40 flex flex-col w-[65%] h-[70vh] items-center justify-center gap-2 hover:shadow-lg/40'>
+                        <div className='relative bg-[var(--tomoi-white)] p-3 rounded-xl shadow-md/20 flex flex-col w-[65%] h-[70vh] items-center justify-center gap-2 hover:shadow-md/40'>
                             
                             {loading && 
                             <div className='loading absolute rounded-xl inset-0 items-center justify-center flex bg-[var(--tomoi-yellow-l)]/50 z-100 text-2xl font-extrabold'>

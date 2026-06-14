@@ -138,6 +138,75 @@ app.get('/session-check', (req, res) => {
     return res.json(req.session.user);
 })
 
+// SEARCH
+
+app.get('/search', (req, res) => {
+    const { userID, searchQuery} = req.query;
+    const query = `SELECT
+                        p.*,
+                        c.*,
+                        ranked.postNumber,
+                        CASE
+                            WHEN COUNT(t.tagName) = 0 THEN JSON_ARRAY()
+                            ELSE JSON_ARRAYAGG(t.tagName)
+                        END AS tags,
+                        (
+                            CASE
+                                WHEN p.title = ? THEN 100
+                                WHEN p.title LIKE CONCAT(?, '%') THEN 75
+                                WHEN p.title LIKE CONCAT('%', ?, '%') THEN 50
+                                ELSE 0
+                            END
+                            +
+                            CASE
+                                WHEN c.content LIKE CONCAT('%', ?, '%') THEN 10
+                                ELSE 0
+                            END
+                            +
+                            CASE
+                                WHEN COUNT(CASE WHEN t.tagName LIKE CONCAT('%', ?, '%') THEN 1 END) > 0
+                                THEN 30
+                                ELSE 0
+                            END
+                        ) AS likeness
+                        
+                    FROM posts p
+
+                    JOIN contents c
+                        ON p.contentID = c.contentID
+
+                    JOIN (
+                        SELECT
+                            postID,
+                            ROW_NUMBER() OVER (ORDER BY dateCreated ASC) AS postNumber
+                        FROM posts
+                    ) ranked
+                        ON ranked.postID = p.postID
+
+                    LEFT JOIN post_tags pt
+                        ON pt.postID = p.postID
+
+                    LEFT JOIN tags t
+                        ON t.tagID = pt.tagID
+
+                    WHERE p.author = ?
+
+                    GROUP BY
+                        p.postID,
+                        ranked.postNumber
+                    HAVING likeness > 0
+                    ORDER BY likeness DESC;`
+
+    db.query(query, [searchQuery, searchQuery, searchQuery, searchQuery, searchQuery, toBinaryUUID(userID)], (err, result) => {
+        if (err) {
+            console.error('Error searching for entries', err);
+            res.status(500).json({ error: 'Error searching for entries' });
+        } else {
+            res.json(result);
+        }
+    });
+});
+
 // ENTRY ENDPOINTS
 
 app.post('/create-entry', (req, res) => {
