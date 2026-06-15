@@ -453,7 +453,101 @@ app.get('/get-current-month-entries', (req, res) => {
     });
 });
 
-app.get('/get-selected-date-entry', (req, res) => {
+app.get('/get-all-entries', (req, res) => {
+    const {userID} = req.query;
+    const query = `SELECT
+                        p.*,
+                        c.*,
+                        ranked.postNumber,
+                        CASE
+                            WHEN COUNT(t.tagName) = 0 THEN JSON_ARRAY()
+                            ELSE JSON_ARRAYAGG(t.tagName)
+                        END AS tags
+                    FROM posts p
+
+                    JOIN contents c
+                        ON p.contentID = c.contentID
+
+                    JOIN (
+                        SELECT
+                            postID,
+                            ROW_NUMBER() OVER (ORDER BY dateCreated ASC) AS postNumber
+                        FROM posts
+                    ) ranked
+                        ON ranked.postID = p.postID
+
+                    LEFT JOIN post_tags pt
+                        ON pt.postID = p.postID
+
+                    LEFT JOIN tags t
+                        ON t.tagID = pt.tagID
+
+                    WHERE p.author = ?
+
+                    GROUP BY
+                        p.postID,
+                        ranked.postNumber
+                        
+                    ORDER BY ranked.postNumber ASC;`
+    //const query = 'SELECT * FROM posts JOIN contents ON posts.contentID = contents.contentID WHERE author = ? AND dateCreated >= ? AND dateCreated < ?';
+    db.query(query, [toBinaryUUID(userID)], (err, result) => {
+        if (err) {
+            console.error('Error fetching all entries', err);
+            res.status(500).json({ error: 'Error fetching all entries' });
+        } else {
+            res.json(result);
+        }
+    });
+});
+
+app.get('/get-favorite-entries', (req, res) => {
+    const {userID} = req.query;
+    const query = `SELECT
+                        p.*,
+                        c.*,
+                        ranked.postNumber,
+                        CASE
+                            WHEN COUNT(t.tagName) = 0 THEN JSON_ARRAY()
+                            ELSE JSON_ARRAYAGG(t.tagName)
+                        END AS tags
+                    FROM posts p
+
+                    JOIN contents c
+                        ON p.contentID = c.contentID
+
+                    JOIN (
+                        SELECT
+                            postID,
+                            ROW_NUMBER() OVER (ORDER BY dateCreated ASC) AS postNumber
+                        FROM posts
+                    ) ranked
+                        ON ranked.postID = p.postID
+
+                    LEFT JOIN post_tags pt
+                        ON pt.postID = p.postID
+
+                    LEFT JOIN tags t
+                        ON t.tagID = pt.tagID
+
+                    WHERE p.author = ? AND p.isFavorite = 1
+
+                    GROUP BY
+                        p.postID,
+                        ranked.postNumber
+                        
+                    ORDER BY ranked.postNumber ASC;`
+    //const query = 'SELECT * FROM posts JOIN contents ON posts.contentID = contents.contentID WHERE author = ? AND dateCreated >= ? AND dateCreated < ?';
+    db.query(query, [toBinaryUUID(userID)], (err, result) => {
+        if (err) {
+            console.error('Error fetching all favorite entries', err);
+            res.status(500).json({ error: 'Error fetching all entries' });
+        } else {
+            res.json(result);
+        }
+    });
+});
+
+/* app.get('/get-selected-date-entry', (req, res) => {
     const { userID, startDate, endDate} = req.query;
     const query = 'SELECT * FROM posts JOIN contents ON posts.contentID = contents.contentID WHERE posts.author = ? AND dateCreated >= ? AND dateCreated < ?';
     db.query(query, [toBinaryUUID(userID), startDate, endDate], (err, result) => {
@@ -497,7 +591,7 @@ app.get('/get-selected-date-entry', (req, res) => {
             
         }
     });
-});
+}); */
 
 app.put('/update-favorite', (req, res) => {
     const {postID, favorite} = req.body;

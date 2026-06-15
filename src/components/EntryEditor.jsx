@@ -100,6 +100,7 @@ function EntryEditor({isOpen, onClose, mode}) {
         if (!editor) return;
 
         if (selectedEntry){
+            console.log(selectedEntry)
             editor.commands.setContent(JSON.parse(selectedEntry.content))
             setTitle(selectedEntry.title)
             setFeeling(selectedEntry.feeling)

@@ -12,7 +12,7 @@ import customParseFormat from "dayjs/plugin/customParseFormat";
 
 function SearchBar() {
     const {user} = useAuth();
-    const {monthEntries, selectedEntry, setSelectedDate, selectedDate} = useEntry()
+    const {entrySet, selectedEntry, setSelectedDate, selectedDate} = useEntry()
     const [searchQuery, setSearchQuery] = useState("")
     const [debouncedQuery, setDebouncedQuery] = useState("")
     const [results, setResults] = useState([])

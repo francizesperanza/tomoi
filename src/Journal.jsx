@@ -6,6 +6,7 @@ import { EmojiFrown, JournalText, PencilFill, ThreeDotsVertical, Star, ArrowLeft
 import { duration, Popover } from '@mui/material';
 import EntryEditor from './components/EntryEditor';
 import { useEditor, EditorContent, EditorContext, useEditorState } from '@tiptap/react';
+import { generateHTML } from '@tiptap/core'
 import { TextStyleKit, Color } from '@tiptap/extension-text-style'
 import StarterKit from '@tiptap/starter-kit'
 import { Placeholder, CharacterCount} from '@tiptap/extensions'
@@ -29,13 +30,12 @@ dayjs.extend(customParseFormat);
 
 
 function Journal() {
-    const {setSelectedEntry, selectedEntry, loading, setLoading, refreshEntries} = useEntry();
+    const {setSelectedEntry, setEntrySet, setSelectedDate, selectedEntry, loading, setLoading, refreshEntries, entrySet, view, setView} = useEntry();
     const navigate = useNavigate();
     const [anchorEl, setAnchorEl] = useState(null);
     const [isJEditorOpen, setIsJEditorOpen] = useState(false);
     const [hasEntry, setHasEntry] = useState(false);
     const [mode, setMode] = useState("new");
-    const [view, setView] = useState("calendar")
 
     const root = useRef(null);
     const scope = useRef(null);
@@ -57,6 +57,9 @@ function Journal() {
 
     const openPopover = (e) => {
         setAnchorEl(e.currentTarget);
+        if (view !== 'calendar') {
+            setSelectedDate(dayjs(e.currentTarget.getAttribute('post-date')))
+        }
     }
     
     const closePopover = () => {
@@ -166,9 +169,10 @@ function Journal() {
 
     }
 
-    const onHandleFavorite = async(e) => {
+    const onHandleFavorite = async(e, id) => {
         try {
-            const resFavorite = !selectedEntry.isFavorite
+            var favoritedEntry = entrySet.find(entry => entry.postID === id)
+            const resFavorite = !favoritedEntry.isFavorite
             animate(e.currentTarget.querySelector('.favorite'),{
                 scale: [
                     { to: 0.7, duration: 200, delay: 0},
@@ -184,24 +188,22 @@ function Journal() {
 
             const API_URL = import.meta.env.VITE_API_URL
             const response = await axios.put(`${API_URL}/update-favorite`, {
-                postID: selectedEntry.postID,
+                postID: favoritedEntry.postID,
                 favorite: resFavorite
             })
 
-            setSelectedEntry(prev => ({
-                ...prev,
-                isFavorite: resFavorite
-            }))
+            entrySet.find(entry => entry.postID === id).isFavorite = resFavorite
+            setSelectedDate(dayjs(favoritedEntry.dateCreated))
 
         } catch (err) {
             console.error('Error updating favorite:', err);
-            console.log(err)
         }
     }
 
     const onHandleDelete = async() => {
         try {
             setLoading(true)
+            
             const API_URL = import.meta.env.VITE_API_URL
             const response = await axios.delete(`${API_URL}/delete-entry`, {
                 data: {
@@ -217,6 +219,19 @@ function Journal() {
             console.error('Error deleting entry:', err);
         } finally {
             setLoading(false)
+        }
+    }
+
+    const openSelectedEntry = (date) => {
+        const entry = entrySet.find(entry => dayjs(entry.dateCreated).isSame(date, 'day'))
+        if (entry){
+            setSelectedEntry(entry)
+            setIsJEditorOpen(true)
+            setMode("edit")
+        } else {
+            setSelectedEntry(null)
+            setIsJEditorOpen(true)
+            setMode("new")
         }
     }
 
@@ -241,6 +256,61 @@ function Journal() {
                     </div>
                     <div className='w-full flex justify-center items-start z-2 mt-3 mb-10'>
                         {
+                            (view === 'all' || view === 'favorites') &&
+                            <div className='shadow-md/20 flex rounded-xl justify-center w-[90%] min-h-screen bg-[var(--tomoi-gray)]'>
+                                <div className='grid grid-cols-4 h-fit gap-4 p-4 w-full items-contain auto-cols-[minmax(0,3fr)]'>
+                                    {
+                                        entrySet.map((entry, index) => {
+                                            return  <div key={index} onClick={() => {openSelectedEntry(entry.dateCreated)}} className='relative overflow-hidden bg-[var(--tomoi-white)] h-[30vh] p-4 rounded-xl shadow-md/20 hover:shadow-md/40 flex flex-col items-start justify-end'>
+                                                        <ThreeDotsVertical width={"1.5em"} height={"1.5em"} post-date={entry.dateCreated} className='absolute right-3 top-3 rounded-full z-100 p-1 bg-transparent hover:bg-[var(--tomoi-gray)] pointer-events-auto' onClick={(e) => {e.stopPropagation(); openPopover(e)}}></ThreeDotsVertical>
+                                                        <div className='absolute text-md font-bold z-50 select-none pointer-events-none right-2'>#{entry.postNumber}</div>
+                                                        <div className='absolute top-3'
+                                                            dangerouslySetInnerHTML={{
+                                                                __html: generateHTML(JSON.parse(entry.content), [StarterKit, TextStyleKit])
+                                                            }}>
+                                                        </div>
+                                                        <div className='absolute inset-0 rounded-xl bg-linear-to-b from-1% from-transparent via-[var(--tomoi-white)] via-40% to-[var(--tomoi-white)] to-70% z-10'></div>
+                                                        <div className="flex flex-col z-10">
+                                                            <div className='font-bold text-2xl leading-none'>{entry.title}</div>
+                                                            <div>{dayjs(entry.dateCreated).format('MMMM DD, YYYY')}</div>
+                                                        </div>
+                                                        <div className='flex flex-col gap-1 w-full z-10'>
+                                                            <div className='text-sm px-4 rounded-xl w-fit'
+                                                            style={{
+                                                                'backgroundColor' : (feelingMap[entry.feeling])
+                                                            }}>{entry.feeling}</div>
+                                                            <div className='w-full flex items-center justify-between'>
+                                                                <div className='flex gap-1 items-center'>
+                                                                    {
+                                                                        entry.tags?.slice(0,3).map((tag, index) => {
+                                                                            if (tag)
+                                                                                return <div key={index} className='text-sm px-2 border-1 border-dashed border-[var(--tomoi-gray-d)] bg-[var(--tomoi-gray-l)] w-fit'>{tag}</div>
+                                                                        })
+                                                                    }
+                                                                    {
+                                                                        entry.tags?.length > 3 && <div className='text-xs bg-[var(--tomoi-gray-l)] rounded-full px-2 py-1'>+{entry.tags.length - 3}</div>
+                                                                    }
+                                                                </div>
+                                                                {
+                                                                    entry.isFavorite ?
+                                                                    <div post-date={entry.dateCreated} onMouseEnter={onFavoriteHover} onMouseLeave={onFavoriteLeave} onClick={(e) => {e.stopPropagation(); onHandleFavorite(e, entry.postID)}} className='z-100 pointer-events-auto option overflow-visible hover:font-bold flex items-center justify-between overflow-hidden'>
+                                                                        <StarFill className='favorite size-[1.5em] text-[var(--tomoi-yellow)] border-dashed'></StarFill>
+                                                                    </div> 
+                                                                    :
+                                                                    <div post-date={entry.dateCreated} onMouseEnter={onFavoriteHover} onMouseLeave={onFavoriteLeave} onClick={(e) => {e.stopPropagation(); onHandleFavorite(e, entry.postID)}} className='z-100 pointer-events-auto option overflow-visible hover:font-bold flex items-center justify-between overflow-hidden'>
+                                                                        <Star className='favorite size-[1.5em] text-[var(--tomoi-yellow)] border-dashed'></Star>
+                                                                    </div>
+                                                                }
+                                                            </div>
+                                                        </div>
+                                                        
+                                                    </div>
+                                        })
+                                    }
+                                </div>
+                            </div>
+                        }
+                        {
                             view === 'calendar' &&
                             <div className='flex justify-center items-start z-2 w-[90%] gap-4'>
                                 <div className='bg-[var(--tomoi-gray)] p-3 rounded-xl shadow-md/20 w-[35%]'>
@@ -262,7 +332,6 @@ function Journal() {
                                                     <div>
                                                         <div className='flex'>
                                                             <div className='text-4xl font-bold w-[70%]'>{selectedEntry?.title}</div>
-                                                            <div className='text-4xl font-bold w-[30%] text-right'>#{selectedEntry?.postNumber}</div>
                                                         </div>
                                                         <div className='text-xl'>{dayjs(selectedEntry?.dateCreated).format('MMMM DD, YYYY')}</div>
                                                     </div>
@@ -283,13 +352,15 @@ function Journal() {
                                                                 selectedEntry?.tags?.length > 5 && <div className='bg-[var(--tomoi-gray-l)] rounded-full px-2 py-1'>+{selectedEntry.tags.length - 5}</div>
                                                             }
                                                         </div>
+                                                        
+                                                        <div className='absolute text-2xl font-bold right-3 z-101 select-none pointer-events-none'>#{selectedEntry?.postNumber}</div>
                                                         {
                                                             selectedEntry?.isFavorite ?
-                                                            <div onMouseEnter={onFavoriteHover} onMouseLeave={onFavoriteLeave} onClick={(e) => {e.stopPropagation(); onHandleFavorite(e)}} className='z-100 pointer-events-auto option overflow-visible hover:font-bold flex items-center justify-between overflow-hidden'>
+                                                            <div onMouseEnter={onFavoriteHover} onMouseLeave={onFavoriteLeave} onClick={(e) => {e.stopPropagation(); onHandleFavorite(e, selectedEntry.postID)}} className='z-100 pointer-events-auto option overflow-visible hover:font-bold flex items-center justify-between overflow-hidden'>
                                                                 <StarFill className='favorite size-[2em] text-[var(--tomoi-yellow)] border-dashed'></StarFill>
                                                             </div> 
                                                             :
-                                                            <div onMouseEnter={onFavoriteHover} onMouseLeave={onFavoriteLeave} onClick={(e) => {e.stopPropagation(); onHandleFavorite(e)}} className='z-100 pointer-events-auto option overflow-visible hover:font-bold flex items-center justify-between overflow-hidden'>
+                                                            <div onMouseEnter={onFavoriteHover} onMouseLeave={onFavoriteLeave} onClick={(e) => {e.stopPropagation(); onHandleFavorite(e, selectedEntry.postID)}} className='z-100 pointer-events-auto option overflow-visible hover:font-bold flex items-center justify-between overflow-hidden'>
                                                                 <Star className='favorite size-[2em] text-[var(--tomoi-yellow)] border-dashed'></Star>
                                                             </div>
                                                         }

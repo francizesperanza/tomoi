@@ -48,7 +48,7 @@ const generateMonthData = (date) => {
 
 
 function TomoiCalendar() {
-    const {setSelectedDate, monthEntries, loading} = useEntry();
+    const {setSelectedDate, entrySet, loading} = useEntry();
     const navigate = useNavigate();
     const [currentDate, setCurrentDate] = useState(dayjs(Date.now()));
     const [anchorEl, setAnchorEl] = useState(null);
@@ -73,7 +73,7 @@ function TomoiCalendar() {
     }
     
     const datesWithEntries = new Map(
-        (monthEntries ?? []).map(entry => [
+        (entrySet ?? []).map(entry => [
         dayjs(entry.dateCreated).date(),
         feelingMap[entry.feeling]
     ]))
