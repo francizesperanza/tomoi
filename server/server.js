@@ -164,6 +164,11 @@ app.get('/search', (req, res) => {
                             END
                             +
                             CASE
+                                WHEN p.feeling LIKE CONCAT('%', ?, '%') THEN 40
+                                ELSE 0
+                            END
+                            +
+                            CASE
                                 WHEN COUNT(CASE WHEN t.tagName LIKE CONCAT('%', ?, '%') THEN 1 END) > 0
                                 THEN 30
                                 ELSE 0
@@ -197,7 +202,7 @@ app.get('/search', (req, res) => {
                     HAVING likeness > 0
                     ORDER BY likeness DESC;`
 
-    db.query(query, [searchQuery, searchQuery, searchQuery, searchQuery, searchQuery, toBinaryUUID(userID)], (err, result) => {
+    db.query(query, [searchQuery, searchQuery, searchQuery, searchQuery, searchQuery, searchQuery, toBinaryUUID(userID)], (err, result) => {
         if (err) {
             console.error('Error searching for entries', err);
             res.status(500).json({ error: 'Error searching for entries' });
