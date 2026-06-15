@@ -34,9 +34,9 @@ function Navbar() {
 
   return (
     <>
-      <div className='sticky top-0 w-full overflow-visible bg-transparent justify-center items-center z-20 pt-14 px-18'>
+      <div className='pointer-events-none sticky top-0 w-full overflow-visible bg-transparent justify-center items-center z-20 pt-14 px-18'>
         <div className='flex'>
-          <div className='flex'>
+          <div className='flex pointer-events-auto'>
             <div data-text="tomoi" className='alt-font text-4xl rounded-full z-12 bg-[var(--tomoi-yellow)] px-8 py-2 stroked hover:bg-[var(--tomoi-yellow-d)] shadow-sm/30'
               style={{"--inside-color": 'black'}}
               onClick={() => navigate('/home')}
