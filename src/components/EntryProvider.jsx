@@ -21,7 +21,10 @@ function EntryProvider ({children}) {
     const [selectedEntry, setSelectedEntry] = useState("");
     const [entrySet, setEntrySet] = useState([]);
     const [loading, setLoading] = useState(false);
-    const [view, setView] = useState('calendar')
+    const [view, setView] = useState('calendar');
+    const [currentPage, setCurrentPage] = useState(1);
+    const [totalEntries, setTotalEntries] = useState(0);
+    const entriesPerPage = 12;
 
     // const getSelectedDateEntry2 = async () => {
     //     const startDate = selectedDate.startOf('day').format('YYYY-MM-DD');
@@ -87,19 +90,26 @@ function EntryProvider ({children}) {
             } else if (view === 'all'){
                 response = await axios.get(`${API_URL}/get-all-entries`, {
                     params: {
-                        userID
+                        userID,
+                        currentPage,
+                        entriesPerPage
                     }
                 })
             } else if (view === 'favorites') {
                 response = await axios.get(`${API_URL}/get-favorite-entries`, {
                     params: {
-                        userID
+                        userID,
+                        currentPage,
+                        entriesPerPage
                     }
                 })
             }
             
             const data = await response.data;
             setEntrySet(data)
+            if (data[0]?.total !== undefined) {
+                setTotalEntries(data[0].total)
+            }
         } catch (err) {
             if (err.response?.status === 401) {
                 setSelectedEntry(null);
@@ -129,7 +139,7 @@ function EntryProvider ({children}) {
 
     useEffect(() => {
         getEntrySet();
-    }, [monthKey, view]);
+    }, [monthKey, view, currentPage]);
 
     return (
         <EntryContext.Provider value={{
@@ -143,7 +153,12 @@ function EntryProvider ({children}) {
             loading,
             setLoading,
             view,
-            setView
+            setView,
+            currentPage,
+            setCurrentPage,
+            setTotalEntries,
+            totalEntries,
+            entriesPerPage
             }}>
             {children}
         </EntryContext.Provider>

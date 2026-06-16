@@ -193,7 +193,7 @@ function EntryEditor({isOpen, onClose, mode}) {
                 try {
                     setLoading(true)
                     const API_URL = import.meta.env.VITE_API_URL
-                    const response = await axios.post(`${API_URL}/create-entry`, {
+                    const response = await axios.post(`${API_URL}/seed-posts`, {
                         title,
                         author,
                         content,

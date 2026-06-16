@@ -8,6 +8,7 @@ const crypto = require('crypto');
 const session = require('express-session');
 const { encrypt, decrypt } = require('./helper');
 const { fromBinaryUUID, toBinaryUUID, createBinaryUUID} = require("binary-uuid");
+const seedPosts = require('./scripts/testing');
 const dayjs = require('dayjs');
 
 const corsOptions = {
@@ -454,11 +455,16 @@ app.get('/get-current-month-entries', (req, res) => {
 });
 
 app.get('/get-all-entries', (req, res) => {
-    const {userID} = req.query;
+    const {userID, currentPage, entriesPerPage} = req.query;
+
+    const limit = Number(entriesPerPage);
+    const offset = (Number(currentPage) - 1) * limit;
+
     const query = `SELECT
                         p.*,
                         c.*,
                         ranked.postNumber,
+                        COUNT(*) OVER() AS total,
                         CASE
                             WHEN COUNT(t.tagName) = 0 THEN JSON_ARRAY()
                             ELSE JSON_ARRAYAGG(t.tagName)
@@ -488,9 +494,13 @@ app.get('/get-all-entries', (req, res) => {
                         p.postID,
                         ranked.postNumber
                         
-                    ORDER BY ranked.postNumber ASC;`
+                    ORDER BY ranked.postNumber ASC
+                    
+                    LIMIT ?
+                    
+                    OFFSET ?;`
     //const query = 'SELECT * FROM posts JOIN contents ON posts.contentID = contents.contentID WHERE author = ? AND dateCreated >= ? AND dateCreated < ?';
-    db.query(query, [toBinaryUUID(userID)], (err, result) => {
+    db.query(query, [toBinaryUUID(userID), limit, offset], (err, result) => {
         if (err) {
             console.error('Error fetching all entries', err);
             res.status(500).json({ error: 'Error fetching all entries' });
@@ -501,11 +511,16 @@ app.get('/get-all-entries', (req, res) => {
 });
 
 app.get('/get-favorite-entries', (req, res) => {
-    const {userID} = req.query;
+    const {userID, currentPage, entriesPerPage} = req.query;
+
+    const limit = Number(entriesPerPage);
+    const offset = (Number(currentPage) - 1) * limit;
+    
     const query = `SELECT
                         p.*,
                         c.*,
                         ranked.postNumber,
+                        COUNT(*) OVER() AS total,
                         CASE
                             WHEN COUNT(t.tagName) = 0 THEN JSON_ARRAY()
                             ELSE JSON_ARRAYAGG(t.tagName)
@@ -535,9 +550,13 @@ app.get('/get-favorite-entries', (req, res) => {
                         p.postID,
                         ranked.postNumber
                         
-                    ORDER BY ranked.postNumber ASC;`
+                    ORDER BY ranked.postNumber ASC
+                    
+                    LIMIT ?
+                    
+                    OFFSET ?;`
     //const query = 'SELECT * FROM posts JOIN contents ON posts.contentID = contents.contentID WHERE author = ? AND dateCreated >= ? AND dateCreated < ?';
-    db.query(query, [toBinaryUUID(userID)], (err, result) => {
+    db.query(query, [toBinaryUUID(userID), limit, offset], (err, result) => {
         if (err) {
             console.error('Error fetching all favorite entries', err);
             res.status(500).json({ error: 'Error fetching all entries' });
@@ -607,3 +626,7 @@ app.put('/update-favorite', (req, res) => {
         res.status(200).json(result);
     });
 });
+
+// TESTING ENDPOINT
+
+app.post('/seed-posts', seedPosts(db, createBinaryUUID, toBinaryUUID))

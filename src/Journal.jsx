@@ -22,6 +22,7 @@ import isLeapYear from "dayjs/plugin/isLeapYear";
 import localeData from "dayjs/plugin/localeData";
 import customParseFormat from "dayjs/plugin/customParseFormat";
 import SearchBar from './components/SearchBar';
+import EntryPagination from './components/EntryPagination';
 
 
 dayjs.extend(isLeapYear);
@@ -30,7 +31,7 @@ dayjs.extend(customParseFormat);
 
 
 function Journal() {
-    const {setSelectedEntry, setEntrySet, setSelectedDate, selectedEntry, loading, setLoading, refreshEntries, entrySet, view, setView} = useEntry();
+    const {totalEntries, entriesPerPage, currentPage, setSelectedEntry, setEntrySet, setSelectedDate, selectedEntry, loading, setLoading, refreshEntries, entrySet, view, setView} = useEntry();
     const navigate = useNavigate();
     const [anchorEl, setAnchorEl] = useState(null);
     const [isJEditorOpen, setIsJEditorOpen] = useState(false);
@@ -257,12 +258,12 @@ function Journal() {
                     <div className='w-full flex justify-center items-start z-2 mt-3 mb-10'>
                         {
                             (view === 'all' || view === 'favorites') &&
-                            <div className='shadow-md/20 flex rounded-xl justify-center w-[90%] min-h-screen bg-[var(--tomoi-gray)]'>
-                                <div className='grid grid-cols-4 h-fit gap-4 p-4 w-full items-contain auto-cols-[minmax(0,3fr)]'>
+                            <div className='relative shadow-md/20 flex flex-col gap-4 p-4 rounded-xl justify-between w-[90%] min-h-screen bg-[var(--tomoi-gray)]'>
+                                <div className='grid grid-cols-4 h-fit gap-4 w-full items-contain auto-cols-[minmax(0,3fr)]'>
                                     {
                                         entrySet.map((entry, index) => {
-                                            return  <div key={index} onClick={() => {openSelectedEntry(entry.dateCreated)}} className='relative overflow-hidden bg-[var(--tomoi-white)] h-[30vh] p-4 rounded-xl shadow-md/20 hover:shadow-md/40 flex flex-col items-start justify-end'>
-                                                        <ThreeDotsVertical width={"1.5em"} height={"1.5em"} post-date={entry.dateCreated} className='absolute right-3 top-3 rounded-full z-100 p-1 bg-transparent hover:bg-[var(--tomoi-gray)] pointer-events-auto' onClick={(e) => {e.stopPropagation(); openPopover(e)}}></ThreeDotsVertical>
+                                            return  <div key={index} onClick={() => {openSelectedEntry(entry.dateCreated)}} className='relative overflow-hidden bg-[var(--tomoi-white)] h-[30vh] p-4 rounded-xl shadow-md/20 hover:shadow-md/40 flex flex-col items-start justify-end group'>
+                                                        <ThreeDotsVertical width={"1.5em"} height={"1.5em"} post-date={entry.dateCreated} className='absolute right-3 top-3 rounded-full z-100 p-1 bg-transparent hidden outline-white outline-6 group-hover:flex hover:outline-1 hover:outline-black group-hover:bg-[var(--tomoi-gray)] pointer-events-auto' onClick={(e) => {e.stopPropagation(); openPopover(e)}}></ThreeDotsVertical>
                                                         <div className='absolute text-md font-bold z-50 select-none pointer-events-none right-2'>#{entry.postNumber}</div>
                                                         <div className='absolute top-3'
                                                             dangerouslySetInnerHTML={{
@@ -308,6 +309,7 @@ function Journal() {
                                         })
                                     }
                                 </div>
+                                <EntryPagination totalEntries={totalEntries} entriesPerPage={entriesPerPage}></EntryPagination>
                             </div>
                         }
                         {
