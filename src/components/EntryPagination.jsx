@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useEntry } from './EntryProvider';
-import { ChevronDoubleLeft, ChevronDoubleRight, ChevronLeft, ChevronRight } from 'react-bootstrap-icons';
+import { CaretLeftSquareFill, CaretRightSquareFill, CaretLeftFill, CaretRightFill } from 'react-bootstrap-icons';
 
 function EntryPagination({totalEntries, entriesPerPage}) {
 
@@ -37,12 +37,12 @@ function EntryPagination({totalEntries, entriesPerPage}) {
     <>
         <div className='flex gap-2 justify-center items-center w-full'>
             <button>
-                <ChevronDoubleLeft onClick={() => setCurrentPage(1)} className='size-[1em] cursor-pointer'></ChevronDoubleLeft>
+                <CaretLeftSquareFill onClick={() => setCurrentPage(1)} className='text-[var(--tomoi-gray-d)] size-[1.2em] cursor-pointer'></CaretLeftSquareFill>
             </button>
             <button>
-                <ChevronLeft onClick={() => currentPage > 1 && setCurrentPage(currentPage - 1)} className='size-[1em] cursor-pointer'></ChevronLeft>
+                <CaretLeftFill onClick={() => currentPage > 1 && setCurrentPage(currentPage - 1)} className='text-[var(--tomoi-gray-d)] size-[1.2em] cursor-pointer'></CaretLeftFill>
             </button>
-            <div className='flex gap-2 justify-center items-center w-[35vw]'>
+            <div className='flex gap-2 justify-center items-center w-[27vw]'>
                 {
                     pages.map((page, index) => {
                         return (
@@ -64,11 +64,11 @@ function EntryPagination({totalEntries, entriesPerPage}) {
             </div>
             
             <button>
-                <ChevronRight onClick={() => currentPage < totalPages && setCurrentPage(currentPage + 1)} className='size-[1em] cursor-pointer'></ChevronRight>
+                <CaretRightFill onClick={() => currentPage < totalPages && setCurrentPage(currentPage + 1)} className='text-[var(--tomoi-gray-d)] size-[1.2em] cursor-pointer'></CaretRightFill>
             </button>
 
             <button>
-                <ChevronDoubleRight onClick={() => setCurrentPage(totalPages)} className='size-[1em] cursor-pointer'></ChevronDoubleRight>
+                <CaretRightSquareFill onClick={() => setCurrentPage(totalPages)} className='text-[var(--tomoi-gray-d)] size-[1.2em] cursor-pointer'></CaretRightSquareFill>
             </button>
         </div>
     </>
