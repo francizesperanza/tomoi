@@ -46,7 +46,7 @@ function EntryPagination({totalEntries, entriesPerPage}) {
             <button>
                 <CaretLeftFill onClick={() => currentPage > 1 && setCurrentPage(currentPage - 1)} className='text-[var(--tomoi-gray-d)] size-[1.2em] cursor-pointer'></CaretLeftFill>
             </button>
-            <div className='flex gap-2 justify-center items-center w-[27vw]'>
+            <div className='flex gap-2 justify-center items-center'>
                 {
                     pages.map((page, index) => {
                         return (

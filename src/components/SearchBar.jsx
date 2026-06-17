@@ -181,8 +181,8 @@ function SearchBar() {
                     
                 }
                 {
-                    cursor && focusSearch &&
-                    <button ref={bottomRef} onClick={() => loadMore()} className='w-full py-2 hover:bg-[var(--tomoi-yellow-l)] text-center'>Load More</button>
+                    cursor && focusSearch && debouncedQuery.length > 0 && !loading &&
+                    <button ref={bottomRef} onClick={() => loadMore()} className='w-full text-sm py-2 hover:bg-[var(--tomoi-yellow-l)] text-center'>Load More</button>
                 }
             </div>
         </div>

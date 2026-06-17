@@ -193,7 +193,7 @@ function EntryEditor({isOpen, onClose, mode}) {
                 try {
                     setLoading(true)
                     const API_URL = import.meta.env.VITE_API_URL
-                    const response = await axios.post(`${API_URL}/seed-posts`, {
+                    const response = await axios.post(`${API_URL}/create-entry`, {
                         title,
                         author,
                         content,
@@ -208,9 +208,6 @@ function EntryEditor({isOpen, onClose, mode}) {
                     await refreshEntries();
                 } catch (err) {
                     console.error('Error creating entry:', err);
-                    console.log(err.response);
-                    console.log(err.response?.data);
-                    console.log(err.response?.status);
                 }
             } else if (mode === 'edit') {
                 if (

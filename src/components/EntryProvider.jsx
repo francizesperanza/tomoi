@@ -24,6 +24,8 @@ function EntryProvider ({children}) {
     const [view, setView] = useState('calendar');
     const [currentPage, setCurrentPage] = useState(1);
     const [totalEntries, setTotalEntries] = useState(0);
+    const [filterOption, setFilterOption] = useState('all')
+    const [sortOption, setSortOption] = useState('newest')
     const entriesPerPage = 12;
 
     // const getSelectedDateEntry2 = async () => {
@@ -92,7 +94,8 @@ function EntryProvider ({children}) {
                     params: {
                         userID,
                         currentPage,
-                        entriesPerPage
+                        entriesPerPage,
+                        sortOption,
                     }
                 })
             } else if (view === 'favorites') {
@@ -100,7 +103,8 @@ function EntryProvider ({children}) {
                     params: {
                         userID,
                         currentPage,
-                        entriesPerPage
+                        entriesPerPage,
+                        sortOption
                     }
                 })
             }
@@ -139,7 +143,12 @@ function EntryProvider ({children}) {
 
     useEffect(() => {
         getEntrySet();
-    }, [monthKey, view, currentPage]);
+    }, [view, currentPage, sortOption]);
+
+    useEffect(() => {
+        if (view === 'calendar')
+            getEntrySet();
+    }, [monthKey]);
 
     return (
         <EntryContext.Provider value={{
@@ -158,7 +167,11 @@ function EntryProvider ({children}) {
             setCurrentPage,
             setTotalEntries,
             totalEntries,
-            entriesPerPage
+            entriesPerPage,
+            filterOption,
+            setFilterOption,
+            sortOption,
+            setSortOption
             }}>
             {children}
         </EntryContext.Provider>

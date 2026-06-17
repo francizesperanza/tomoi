@@ -42,7 +42,16 @@ const db = mysql.createConnection({
     port: process.env.DB_PORT
 });
 
-
+const sortQueryMap = {
+    'newest': 'p.dateCreated DESC',
+    'oldest': 'p.dateCreated ASC',
+    'edited-newest': 'p.lastEdited DESC',
+    'edited-oldest': 'p.lastEdited ASC',
+    'feeling-a-z': 'p.feeling ASC',
+    'feeling-z-a': 'p.feeling DESC',
+    'title-a-z': 'p.title ASC',
+    'title-z-a': 'p.title DESC',
+}
 
 app.get('/', (req, res) => {
   res.json({ message: 'Hello from the server!' });
@@ -530,7 +539,8 @@ app.get('/get-current-month-entries', (req, res) => {
 });
 
 app.get('/get-all-entries', (req, res) => {
-    const {userID, currentPage, entriesPerPage} = req.query;
+    const {userID, currentPage, entriesPerPage, sortOption} = req.query;
+    console.log(sortQueryMap[sortOption])
 
     const limit = Number(entriesPerPage);
     const offset = (Number(currentPage) - 1) * limit;
@@ -569,7 +579,7 @@ app.get('/get-all-entries', (req, res) => {
                         p.postID,
                         ranked.postNumber
                         
-                    ORDER BY ranked.postNumber ASC
+                    ORDER BY ${sortQueryMap[sortOption]}
                     
                     LIMIT ?
                     
