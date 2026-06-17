@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { Search, X, XSquareFill } from 'react-bootstrap-icons';
 import axios from "axios";
 import { useAuth } from './AuthProvider';
@@ -11,6 +11,7 @@ import customParseFormat from "dayjs/plugin/customParseFormat";
 
 
 function SearchBar() {
+    const bottomRef = useRef(null);
     const {user} = useAuth();
     const {entrySet, selectedEntry, setSelectedDate, selectedDate} = useEntry()
     const [searchQuery, setSearchQuery] = useState("")
@@ -18,6 +19,7 @@ function SearchBar() {
     const [results, setResults] = useState([])
     const [focusSearch, setFocusSearch] = useState(false)
     const [loading, setLoading] = useState(false)
+    const [cursor, setCursor] = useState(null)
 
     useEffect(() => {
         setLoading(true)
@@ -54,11 +56,14 @@ function SearchBar() {
                 const response = await axios.get(`${API_URL}/search`, {
                     params: {
                         userID: user.userID,
-                        searchQuery: debouncedQuery
+                        searchQuery: debouncedQuery,
+                        cursorPostNumber: null,
+                        cursorLikeness: null
                     }
                 })
-                const data = response.data
-                setResults(data)
+                const data = await response.data
+                setResults(data.result)
+                setCursor(data.cursor)
             } catch (err) {
                 console.error('Error searching entry:', err);
             } finally {
@@ -70,6 +75,45 @@ function SearchBar() {
         searchEntry()
         
     }, [debouncedQuery])
+
+    // useEffect(() => {
+    //     const observer = new IntersectionObserver(
+    //         (entries) => {
+    //             if (entries[0].isIntersecting) {
+    //                 loadMore();
+    //             }
+    //         },
+    //         {
+    //             threshold: 1,
+    //         }
+    //     );
+
+    //     if (bottomRef.current) {
+    //         observer.observe(bottomRef.current);
+    //     }
+
+    //     return () => observer.disconnect();
+    // }, [cursor, debouncedQuery]);
+
+    const loadMore = async () => {
+        if (loading || !cursor) return;
+        setLoading(true);
+
+        const API_URL = import.meta.env.VITE_API_URL
+        const response = await axios.get(`${API_URL}/search`, {
+            params: {
+                userID: user.userID,
+                searchQuery: debouncedQuery,
+                cursorPostNumber: cursor.postNumber,
+                cursorLikeness: cursor.likeness
+            }
+        })
+        const data = await response.data
+        setResults(prev => [...prev, ...data.result])
+        setCursor(data.cursor)
+
+        setLoading(false);
+    };
 
     const handleResultClick = (e) => {
         const formattedDate = dayjs(e.currentTarget.getAttribute('post-date'))
@@ -135,6 +179,10 @@ function SearchBar() {
                             )
                     )
                     
+                }
+                {
+                    cursor && focusSearch &&
+                    <button ref={bottomRef} onClick={() => loadMore()} className='w-full py-2 hover:bg-[var(--tomoi-yellow-l)] text-center'>Load More</button>
                 }
             </div>
         </div>

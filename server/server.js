@@ -142,75 +142,151 @@ app.get('/session-check', (req, res) => {
 // SEARCH
 
 app.get('/search', (req, res) => {
-    const { userID, searchQuery} = req.query;
-    const query = `SELECT
-                        p.*,
-                        c.*,
-                        ranked.postNumber,
-                        CASE
-                            WHEN COUNT(t.tagName) = 0 THEN JSON_ARRAY()
-                            ELSE JSON_ARRAYAGG(t.tagName)
-                        END AS tags,
-                        (
+    const { userID, searchQuery, cursorPostNumber, cursorLikeness} = req.query;
+    var query;
+    if (cursorPostNumber === undefined) {
+        query = `SELECT
+                            p.*,
+                            c.*,
+                            ranked.postNumber,
                             CASE
-                                WHEN p.title = ? THEN 100
-                                WHEN p.title LIKE CONCAT(?, '%') THEN 75
-                                WHEN p.title LIKE CONCAT('%', ?, '%') THEN 50
-                                ELSE 0
-                            END
-                            +
-                            CASE
-                                WHEN c.content LIKE CONCAT('%', ?, '%') THEN 10
-                                ELSE 0
-                            END
-                            +
-                            CASE
-                                WHEN p.feeling LIKE CONCAT('%', ?, '%') THEN 40
-                                ELSE 0
-                            END
-                            +
-                            CASE
-                                WHEN COUNT(CASE WHEN t.tagName LIKE CONCAT('%', ?, '%') THEN 1 END) > 0
-                                THEN 30
-                                ELSE 0
-                            END
-                        ) AS likeness
+                                WHEN COUNT(t.tagName) = 0 THEN JSON_ARRAY()
+                                ELSE JSON_ARRAYAGG(t.tagName)
+                            END AS tags,
+                            (
+                                CASE
+                                    WHEN p.title = ? THEN 100
+                                    WHEN p.title LIKE CONCAT(?, '%') THEN 75
+                                    WHEN p.title LIKE CONCAT('%', ?, '%') THEN 50
+                                    ELSE 0
+                                END
+                                +
+                                CASE
+                                    WHEN c.content LIKE CONCAT('%', ?, '%') THEN 10
+                                    ELSE 0
+                                END
+                                +
+                                CASE
+                                    WHEN p.feeling LIKE CONCAT('%', ?, '%') THEN 40
+                                    ELSE 0
+                                END
+                                +
+                                CASE
+                                    WHEN COUNT(CASE WHEN t.tagName LIKE CONCAT('%', ?, '%') THEN 1 END) > 0
+                                    THEN 30
+                                    ELSE 0
+                                END
+                            ) AS likeness
+                            
+                        FROM posts p
+
+                        JOIN contents c
+                            ON p.contentID = c.contentID
+
+                        JOIN (
+                            SELECT
+                                postID,
+                                ROW_NUMBER() OVER (ORDER BY dateCreated ASC) AS postNumber
+                            FROM posts
+                        ) ranked
+                            ON ranked.postID = p.postID
+
+                        LEFT JOIN post_tags pt
+                            ON pt.postID = p.postID
+
+                        LEFT JOIN tags t
+                            ON t.tagID = pt.tagID
+
+                        WHERE p.author = ?
                         
-                    FROM posts p
 
-                    JOIN contents c
-                        ON p.contentID = c.contentID
+                        GROUP BY
+                            p.postID,
+                            ranked.postNumber
+                        HAVING likeness > 0
+                        ORDER BY likeness DESC, ranked.postNumber ASC
+                        LIMIT 5;`
+        db.query(query, [searchQuery, searchQuery, searchQuery, searchQuery, searchQuery, searchQuery, toBinaryUUID(userID)], (err, result) => {
+            if (err) {
+                console.error('Error searching for entries', err);
+                res.status(500).json({ error: 'Error searching for entries' });
+            } else {
+                res.json({result: result, cursor: result.length === 5 ? {postNumber: result[result.length - 1].postNumber, likeness: result[result.length - 1].likeness} : null});
+            }
+        });
+    } else {
+        query = `SELECT
+                            p.*,
+                            c.*,
+                            ranked.postNumber,
+                            CASE
+                                WHEN COUNT(t.tagName) = 0 THEN JSON_ARRAY()
+                                ELSE JSON_ARRAYAGG(t.tagName)
+                            END AS tags,
+                            (
+                                CASE
+                                    WHEN p.title = ? THEN 100
+                                    WHEN p.title LIKE CONCAT(?, '%') THEN 75
+                                    WHEN p.title LIKE CONCAT('%', ?, '%') THEN 50
+                                    ELSE 0
+                                END
+                                +
+                                CASE
+                                    WHEN c.content LIKE CONCAT('%', ?, '%') THEN 10
+                                    ELSE 0
+                                END
+                                +
+                                CASE
+                                    WHEN p.feeling LIKE CONCAT('%', ?, '%') THEN 40
+                                    ELSE 0
+                                END
+                                +
+                                CASE
+                                    WHEN COUNT(CASE WHEN t.tagName LIKE CONCAT('%', ?, '%') THEN 1 END) > 0
+                                    THEN 30
+                                    ELSE 0
+                                END
+                            ) AS likeness
+                            
+                        FROM posts p
 
-                    JOIN (
-                        SELECT
-                            postID,
-                            ROW_NUMBER() OVER (ORDER BY dateCreated ASC) AS postNumber
-                        FROM posts
-                    ) ranked
-                        ON ranked.postID = p.postID
+                        JOIN contents c
+                            ON p.contentID = c.contentID
 
-                    LEFT JOIN post_tags pt
-                        ON pt.postID = p.postID
+                        JOIN (
+                            SELECT
+                                postID,
+                                ROW_NUMBER() OVER (ORDER BY dateCreated ASC) AS postNumber
+                            FROM posts
+                        ) ranked
+                            ON ranked.postID = p.postID
 
-                    LEFT JOIN tags t
-                        ON t.tagID = pt.tagID
+                        LEFT JOIN post_tags pt
+                            ON pt.postID = p.postID
 
-                    WHERE p.author = ?
+                        LEFT JOIN tags t
+                            ON t.tagID = pt.tagID
 
-                    GROUP BY
-                        p.postID,
-                        ranked.postNumber
-                    HAVING likeness > 0
-                    ORDER BY likeness DESC;`
+                        WHERE
+                        p.author = ? AND ranked.postNumber > ?
 
-    db.query(query, [searchQuery, searchQuery, searchQuery, searchQuery, searchQuery, searchQuery, toBinaryUUID(userID)], (err, result) => {
-        if (err) {
-            console.error('Error searching for entries', err);
-            res.status(500).json({ error: 'Error searching for entries' });
-        } else {
-            res.json(result);
-        }
-    });
+                        GROUP BY
+                            p.postID,
+                            ranked.postNumber
+                        HAVING likeness > 0
+                        ORDER BY likeness DESC, ranked.postNumber ASC
+                        LIMIT 5;`
+
+        db.query(query, [searchQuery, searchQuery, searchQuery, searchQuery, searchQuery, searchQuery, toBinaryUUID(userID), cursorPostNumber], (err, result) => {
+            if (err) {
+                console.error('Error searching for entries', err);
+                res.status(500).json({ error: 'Error searching for entries' });
+            } else {
+                res.json({result: result, cursor: result.length === 5 ? {postNumber: result[result.length - 1].postNumber, likeness: result[result.length - 1].likeness} : null});
+            }
+        });
+    }
+    
 });
 
 // ENTRY ENDPOINTS
@@ -219,7 +295,6 @@ app.post('/create-entry', (req, res) => {
     const { title, author, content, contentText, feeling, dateCreated, lastEdited, tags} = req.body;
     const uuid = createBinaryUUID();
     const contentUuid = createBinaryUUID();
-    console.log(tags)
     // creating entry
     const query = 'INSERT INTO posts (postID, author, title, contentID, feeling, dateCreated, lastEdited, isFavorite) VALUES (?, ?, ?, ?, ?, ?, ?, ?)';
     db.query(query, [uuid.buffer, toBinaryUUID(author), title, contentUuid.buffer, feeling, dateCreated, lastEdited, false], (err, result) => {

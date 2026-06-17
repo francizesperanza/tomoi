@@ -6,7 +6,7 @@ function EntryPagination({totalEntries, entriesPerPage}) {
 
   const [pages, setPages] = useState([]);
   let breakpoint = 10;
-  const {currentPage, setCurrentPage} = useEntry();
+  const {currentPage, setCurrentPage, view} = useEntry();
   
   let startPage = currentPage - Math.floor(breakpoint / 2);
   let endPage = currentPage + Math.floor(breakpoint / 2) - 1;
@@ -32,6 +32,10 @@ function EntryPagination({totalEntries, entriesPerPage}) {
     }
     setPages(newPages);
   }, [currentPage, totalEntries])
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [view])
 
   return (
     <>
