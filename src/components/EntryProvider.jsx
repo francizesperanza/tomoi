@@ -24,7 +24,7 @@ function EntryProvider ({children}) {
     const [view, setView] = useState('calendar');
     const [currentPage, setCurrentPage] = useState(1);
     const [totalEntries, setTotalEntries] = useState(0);
-    const [filterOption, setFilterOption] = useState('all')
+    const [filterOption, setFilterOption] = useState('none')
     const [sortOption, setSortOption] = useState('newest')
     const entriesPerPage = 12;
 
@@ -96,6 +96,7 @@ function EntryProvider ({children}) {
                         currentPage,
                         entriesPerPage,
                         sortOption,
+                        filterOption
                     }
                 })
             } else if (view === 'favorites') {
@@ -104,7 +105,8 @@ function EntryProvider ({children}) {
                         userID,
                         currentPage,
                         entriesPerPage,
-                        sortOption
+                        sortOption,
+                        filterOption
                     }
                 })
             }
@@ -143,7 +145,7 @@ function EntryProvider ({children}) {
 
     useEffect(() => {
         getEntrySet();
-    }, [view, currentPage, sortOption]);
+    }, [view, currentPage, sortOption, filterOption]);
 
     useEffect(() => {
         if (view === 'calendar')

@@ -53,6 +53,24 @@ const sortQueryMap = {
     'title-z-a': 'p.title DESC',
 }
 
+const filterQueryMap = {
+    'none': '',
+    'date-this-year' : "AND YEAR(p.dateCreated) = YEAR(CURRENT_DATE)",
+    'date-this-month' : "AND YEAR(p.dateCreated) = YEAR(CURRENT_DATE) AND MONTH(p.dateCreated) = MONTH(CURRENT_DATE)",
+    "date-last-year": "AND YEAR(p.dateCreated) = YEAR(CURRENT_DATE) - 1", 
+    "date-last-month": `AND p.dateCreated >= DATE_FORMAT(DATE_SUB(CURRENT_DATE, INTERVAL 1 MONTH), '%Y-%m-01')
+                        AND p.dateCreated < DATE_FORMAT(CURRENT_DATE, '%Y-%m-01')`,
+    'feeling-happy': "AND p.feeling = 'Happy'",
+    'feeling-sad' : "AND p.feeling = 'Sad'",
+    'feeling-angry' : "AND p.feeling = 'Angry'",
+    'feeling-excited' : "AND p.feeling = 'Excited'",
+    'feeling-anxious' : "AND p.feeling = 'Anxious'",
+    'feeling-neutral' : "AND p.feeling = 'Neutral'",
+    'feeling-reflective' : "AND p.feeling = 'Reflective'",
+    'feeling-peaceful' : "AND p.feeling = 'Peaceful'",
+    'feeling-lovestruck' : "AND p.feeling = 'Lovestruck'"
+}
+
 app.get('/', (req, res) => {
   res.json({ message: 'Hello from the server!' });
 });
@@ -539,8 +557,7 @@ app.get('/get-current-month-entries', (req, res) => {
 });
 
 app.get('/get-all-entries', (req, res) => {
-    const {userID, currentPage, entriesPerPage, sortOption} = req.query;
-    console.log(sortQueryMap[sortOption])
+    const {userID, currentPage, entriesPerPage, sortOption, filterOption} = req.query;
 
     const limit = Number(entriesPerPage);
     const offset = (Number(currentPage) - 1) * limit;
@@ -574,6 +591,7 @@ app.get('/get-all-entries', (req, res) => {
                         ON t.tagID = pt.tagID
 
                     WHERE p.author = ?
+                    ${filterQueryMap[filterOption]}
 
                     GROUP BY
                         p.postID,

@@ -123,7 +123,7 @@ function SearchBar() {
     return (
         <div 
             tabIndex={-1}
-            className='w-[25%] relative'
+            className='w-[25%] relative flex items-stretch'
             onFocus={() => setFocusSearch(true)}
             onBlur={(e) => {
                 if (!e.currentTarget.contains(e.relatedTarget))
@@ -144,7 +144,7 @@ function SearchBar() {
                     
                 ></input>
             </div>
-            <div className='absolute overflow-y-auto max-h-[50vh] mt-1 flex flex-col divide-y-2 divide-[var(--tomoi-gray)] divide-dashed z-100 rounded-xl shadow-lg/30 bg-[var(--tomoi-white)] w-full'>
+            <div className='absolute overflow-y-auto max-h-[50vh] mt-12 items-stretch flex flex-col divide-y-2 divide-[var(--tomoi-gray)] divide-dashed z-100 rounded-xl shadow-lg/30 bg-[var(--tomoi-white)] w-full'>
                 {
                     focusSearch && (
                         results.length > 0 ?

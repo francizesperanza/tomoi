@@ -2,7 +2,7 @@ import { useEffect, useState, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import TomoiCalendar from './components/TomoiCalendar';
-import { EmojiFrown, JournalText, PencilFill, ThreeDotsVertical, Star, ArrowLeftRight, Trash, StarFill, SortDown, CalendarWeekFill, GridFill, CaretDownFill } from 'react-bootstrap-icons';
+import { EmojiFrown, JournalText, PencilFill, ThreeDotsVertical, Star, ArrowLeftRight, Trash, StarFill, SortDown, CalendarWeekFill, GridFill, CaretDownFill, Filter, CaretRightFill } from 'react-bootstrap-icons';
 import { duration, Popover } from '@mui/material';
 import EntryEditor from './components/EntryEditor';
 import { useEditor, EditorContent, EditorContext, useEditorState } from '@tiptap/react';
@@ -64,14 +64,43 @@ function Journal() {
     }
 
     const sortOptionsMap = {
-        'newest': 'Post Number (Newest)',
-        'oldest': 'Post Number (Oldest)',
-        'edited-newest': 'Last Edited (Newest)',
-        'edited-oldest': 'Last Edited (Oldest)',
+        'newest': 'Post number (newest)',
+        'oldest': 'Post number (oldest)',
+        'edited-newest': 'Last edited (newest)',
+        'edited-oldest': 'Last edited (oldest)',
         'feeling-a-z': 'Feeling (A-Z)',
         'feeling-z-a': 'Feeling (Z-A)',
         'title-a-z': 'Title (A-Z)',
         'title-z-a': 'Title (Z-A)',
+    }
+
+    const filterOptionsMap = {
+        'none': {
+            'optionName': 'No filter'
+        },
+        'date': {
+            'optionName': 'By entry date',
+            'subOptions': {
+                "date-this-year": "This year",
+                "date-this-month": "This month",
+                "date-last-year": "Last year",
+                "date-last-month": "Last month"
+            }
+        },
+        "feeling": {
+            'optionName': 'By feeling',
+            'subOptions': {
+                'feeling-happy': 'Happy',
+                'feeling-sad' : 'Sad',
+                'feeling-angry' : 'Angry',
+                'feeling-excited' : 'Excited',
+                'feeling-anxious' : 'Anxious',
+                'feeling-neutral' : 'Neutral',
+                'feeling-reflective' : 'Reflective',
+                'feeling-peaceful' : 'Peaceful',
+                'feeling-lovestruck' : 'Lovestruck'
+            }
+        }
     }
 
     const openPopover = (e) => {
@@ -291,8 +320,14 @@ function Journal() {
                             (view === 'all' || view === 'favorites') &&
                             <div className='flex gap-2 items-center items-stretch justify-end px-4 w-full'>
                                 <div className='flex justify-center items-center gap-2 text-sm'>
+                                    <Filter className='size-[1.5em]'></Filter>
+                                    <div onClick={(e) => openFilterPopover(e)} className='select-none items-center h-full flex justify-between bg-[var(--tomoi-white)] w-[10vw] leading-none px-3 rounded-xl text-sm'>{filterOption === 'none' ? filterOptionsMap[filterOption].optionName : filterOptionsMap[filterOption.split('-')[0]].subOptions[filterOption]}
+                                        <CaretDownFill className='text-[var(--tomoi-gray-d)]'></CaretDownFill>
+                                    </div>
+                                </div>
+                                <div className='flex justify-center items-center gap-2 text-sm'>
                                     <SortDown className='size-[1.5em]'></SortDown>
-                                    <div onClick={(e) => openSortPopover(e)} className='select-none items-center h-full flex justify-between bg-[var(--tomoi-white)] w-[15vw] px-3 rounded-xl text-sm'>{sortOptionsMap[sortOption]}
+                                    <div onClick={(e) => openSortPopover(e)} className='select-none items-center h-full flex justify-between bg-[var(--tomoi-white)] w-[10vw] leading-none px-3 rounded-xl text-sm'>{sortOptionsMap[sortOption]}
                                         <CaretDownFill className='text-[var(--tomoi-gray-d)]'></CaretDownFill>
                                     </div>
                                 </div>
@@ -452,6 +487,70 @@ function Journal() {
             </div>
 
             <Popover
+                id={filterPopoverId}
+                open={filterOpen}
+                anchorEl={filterAnchorEl}
+                onClose={closeFilterPopover}
+                disableScrollLock
+                anchorOrigin={{
+                vertical: 'bottom',
+                horizontal: 'center',
+                }}
+                transformOrigin={{
+                vertical: 'top',
+                horizontal: 'center',
+                }}
+                slotProps={{
+                    paper: {
+                        sx: {
+                            width: filterAnchorEl?.offsetWidth,
+                            backgroundColor: 'var(--tomoi-white)',
+                            border: '1px dashed black',
+                            borderRadius: '8px',
+                            mt: 1,
+                            display: 'flex',
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                            boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.2), 0 2px 4px -2px rgb(0 0 0 / 0.2)",
+                            overflow: "visible"
+                        },
+                    },
+                }}
+            >
+                <div className='flex w-full flex-col divide-y-1 divide-dashed'>
+                    {
+                        Object.entries(filterOptionsMap).map(([key, value], index) => {
+                            return (
+                                <div key={index} className='relative group overflow-visible'>
+                                    <div onClick={() => {setFilterOption(key)}} className='text-sm option leading-none px-4 py-2 hover:font-bold flex items-center justify-between overflow-visible'>
+                                            {value.optionName}
+                                            {
+                                                value.subOptions &&
+                                                <CaretRightFill className='text-[var(--tomoi-gray-d)]'></CaretRightFill>
+                                            }
+                                        </div>
+                                        {value.subOptions && (
+                                            <div className="overflow-visible absolute bg-[var(--tomoi-white)] border-1 w-full border-dashed rounded-[8px] rounded-tl-none left-full top-0 hidden group-hover:flex group-hover:flex-col border divide-y-1 divide-dashed">
+                                                {Object.entries(value.subOptions).map(([subKey, subValue]) => (
+                                                    <div
+                                                        key={subKey}
+                                                        onClick={() => {setFilterOption(subKey)}}
+                                                        className="text-sm px-4 py-2 hover:font-bold leading-none"
+                                                    >
+                                                        {subValue}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                </div>
+                            )
+                        })
+                    }
+                    
+                </div>
+            </Popover>
+
+            <Popover
                 id={sortPopoverId}
                 open={sortOpen}
                 anchorEl={sortAnchorEl}
@@ -484,7 +583,7 @@ function Journal() {
                 <div className='flex w-full flex-col divide-y-1 divide-dashed'>
                     {
                         Object.entries(sortOptionsMap).map(([key, value], index) => {
-                            return <div key={index} onClick={() => {setSortOption(key); closeSortPopover()}} className='text-sm option px-4 py-2 hover:font-bold flex items-center justify-between overflow-hidden'>
+                            return <div key={index} onClick={() => {setSortOption(key); closeSortPopover()}} className='text-sm option leading-none px-4 py-2 hover:font-bold flex items-center justify-between overflow-hidden'>
                                         {value}
                                     </div>
                         })
