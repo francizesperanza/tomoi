@@ -4,6 +4,9 @@ import { Link, useNavigate } from 'react-router-dom';
 import { toast} from 'react-hot-toast';
 import Navbar from './components/Navbar';
 import TomoiCalendar from './components/TomoiCalendar';
+import { useEntry } from './components/EntryProvider';
+import { useAuth } from './components/AuthProvider'
+import axios from 'axios'
 
 import JournalIcon from './assets/journal_menu_btn.svg?react';
 import HabitsIcon from './assets/habits_menu_btn.svg?react';
@@ -12,13 +15,15 @@ import StatsIcon from './assets/stats_menu_btn.svg?react';
 
 import dayjs from 'dayjs';
 import duration from 'dayjs/plugin/duration';
+import isToday from 'dayjs/plugin/isToday';
 import TomoiHomeMenuBtn from './components/TomoiHomeMenuBtn';
 
 dayjs.extend(duration);
+dayjs.extend(isToday);
 
 const calculateCountdown = () => {
     const today = dayjs().startOf('d');
-    const target = today.add(30, 'hour');
+    const target = today.add(24, 'hour');
     const diff = target.diff(dayjs());
     const countdown = dayjs.duration(diff);
     return {
@@ -30,6 +35,9 @@ const calculateCountdown = () => {
 
 function Home() {
   const navigate = useNavigate();
+  const {entrySet, setLoading} = useEntry();
+  const {user} = useAuth();
+  const [latestEntry, setLatestEntry] = useState({});
   const [dailyEntryCountdown, setDailyEntryCountdown] = useState(calculateCountdown());
   const sampleText = "Want on this when she what would you. In how them or these, well two two there than give, by it about any up most want his who at. Us now do at, that these have as over I one, know some with our he no, person by not any do over give, my when in want, or an now into you with by want he get I do but not, at good, us this say my, most some use come she up if and, your him as now, good use no how us say, good like, now, do there"
   
@@ -41,6 +49,31 @@ function Home() {
     return () => clearInterval(timer);
   })
 
+  useEffect (() => {
+    const getLatestEntry = async() => {
+        try {
+            setLoading(true)
+            const userID = user.userID
+
+            const API_URL = import.meta.env.VITE_API_URL
+            const response = await axios.get(`${API_URL}/get-latest-entry`, {
+                params: {
+                    userID
+                }
+            })
+            const data = await response.data;
+            setLatestEntry(data)
+        } catch (err) {
+            console.error('Error getting latest entry:', err);
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    getLatestEntry()
+}, [])
+    
+
   return (
     <>
         <div className='bg-[var(--tomoi-yellow-l)]'>
@@ -49,22 +82,35 @@ function Home() {
                 <div className='flex w-full max-w-7xl h-[80%] items-stretch justify-center z-10 gap-4'>
                     <div className='flex flex-col bg-[var(--tomoi-gray)] justify-center rounded-xl w-[35%] p-4 gap-4 h-full shadow-md/40 '>
                         <TomoiCalendar></TomoiCalendar>
-                        <div className='flex bg-white rounded-xl items-center justify-center grow-2 gap-3 max-h-[15%] outline-[var(--tomoi-gray-d)] outline-dashed outline-2'>
-                            <div className='flex gap-4 px-5 w-[80%] items-center justify-center'>
-                                <ExclamationTriangle width={40} height={40} className='fill-[var(--tomoi-yellow)]'></ExclamationTriangle>
-                                <div className='flex flex-col items-center'>
-                                    <div className='text-sm text-center'>You haven't done your daily entry!</div>
-                                    <div className='italic text-center text-[var(--tomoi-gray-d)]'>
-                                        {dailyEntryCountdown.days === 0 ? '' : dailyEntryCountdown.days + 'd '}
-                                        {dailyEntryCountdown.hours === 0 ? '' : dailyEntryCountdown.hours + 'hr '}
-                                        {dailyEntryCountdown.minutes === 0 ? '' : dailyEntryCountdown.minutes + 'min'} left</div>
+
+                        {
+                            !dayjs(latestEntry.dateCreated).isToday() ?
+                            <div className='flex bg-white rounded-xl items-center justify-center grow-2 gap-3 max-h-[15%] outline-[var(--tomoi-gray-d)] outline-dashed outline-2'>
+                                <div className='flex gap-4 px-5 w-[80%] items-center justify-center'>
+                                    <ExclamationTriangle width={40} height={40} className='fill-[var(--tomoi-yellow)]'></ExclamationTriangle>
+                                    <div className='flex flex-col items-center'>
+                                        <div className='text-sm text-center'>You haven't done your daily entry!</div>
+                                        <div className='italic text-center text-[var(--tomoi-gray-d)]'>
+                                            {dailyEntryCountdown.days === 0 ? '' : dailyEntryCountdown.days + 'd '}
+                                            {dailyEntryCountdown.hours === 0 ? '' : dailyEntryCountdown.hours + 'hr '}
+                                            {dailyEntryCountdown.minutes === 0 ? '' : dailyEntryCountdown.minutes + 'min'} left</div>
+                                    </div>
+                                </div>
+                                <div className='border-l-2 border-dashed border-[var(--tomoi-gray-d)] group h-full flex items-center justify-center w-[20%] rounded-r-xl bg-[var(--tomoi-gray-l)] hover:bg-[var(--tomoi-yellow-l)]'>
+                                    <Pencil width={30} height={30} className='fill-[var(--tomoi-gray-d)] group-hover:fill-[var(--tomoi-yellow)]'></Pencil>
                                 </div>
                             </div>
-                            <div className='border-l-2 border-dashed border-[var(--tomoi-gray-d)] group h-full flex items-center justify-center w-[20%] rounded-r-xl bg-[var(--tomoi-gray-l)] hover:bg-[var(--tomoi-yellow-l)]'>
-                                <Pencil width={30} height={30} className='fill-[var(--tomoi-gray-d)] group-hover:fill-[var(--tomoi-yellow)]'></Pencil>
+                            :
+                            <div className='flex bg-white rounded-xl items-center justify-center grow-2 gap-3 max-h-[15%] outline-[var(--tomoi-gray-d)] outline-dashed outline-2'>
+                                <div className='flex gap-4 w-fit items-center justify-between'>
+                                    <div className='text-5xl'>🎉</div>
+                                    <div className='flex flex-col items-center'>
+                                        <div className='text-sm text-left'>You've written an entry today!</div>
+                                    </div>
+                                </div>
                             </div>
-                        </div>
-                            
+                        }
+                        
                     </div>
                     <div className='grid grid-flow-row grid-cols-2 grid-rows-4 bg-transparent w-[25%] gap-2'>
                         <TomoiHomeMenuBtn icon={<JournalIcon/>} btnName="Journal" colSpan="2" rowSpan="2" bgColor="var(--tomoi-yellow)" textColor="var(--tomoi-yellow)" link="/journal"></TomoiHomeMenuBtn>

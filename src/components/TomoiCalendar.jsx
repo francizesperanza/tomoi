@@ -5,6 +5,7 @@ import dayjs, {Dayjs} from 'dayjs';
 import { Popover } from '@mui/material';
 import { useEntry } from './EntryProvider'
 
+
 import isLeapYear from "dayjs/plugin/isLeapYear";
 import localeData from "dayjs/plugin/localeData";
 import customParseFormat from "dayjs/plugin/customParseFormat";
@@ -48,9 +49,9 @@ const generateMonthData = (date) => {
 
 
 function TomoiCalendar() {
-    const {setSelectedDate, entrySet, loading} = useEntry();
+    const {setSelectedDate, selectedDate, entrySet, loading} = useEntry();
     const navigate = useNavigate();
-    const [currentDate, setCurrentDate] = useState(dayjs(Date.now()));
+    const [currentDate, setCurrentDate] = useState(dayjs(selectedDate));
     const [anchorEl, setAnchorEl] = useState(null);
     const dayInfo = generateMonthData(currentDate);
     const today = dayjs(Date.now());
@@ -94,6 +95,7 @@ function TomoiCalendar() {
 
     const selectCurrentMonthDay = (day) => {
         const selectedDate = currentDate.date(day);
+        console.log(selectedDate)
         setSelectedDate(selectedDate);
         setCurrentDate(selectedDate);
     }

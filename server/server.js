@@ -613,6 +613,55 @@ app.get('/get-all-entries', (req, res) => {
     });
 });
 
+app.get('/get-latest-entry', (req, res) => {
+    const {userID} = req.query;
+
+    const query = `SELECT
+                        p.*,
+                        c.*,
+                        ranked.postNumber,
+                        COUNT(*) OVER() AS total,
+                        CASE
+                            WHEN COUNT(t.tagName) = 0 THEN JSON_ARRAY()
+                            ELSE JSON_ARRAYAGG(t.tagName)
+                        END AS tags
+                    FROM posts p
+
+                    JOIN contents c
+                        ON p.contentID = c.contentID
+
+                    JOIN (
+                        SELECT
+                            postID,
+                            ROW_NUMBER() OVER (ORDER BY dateCreated ASC) AS postNumber
+                        FROM posts
+                    ) ranked
+                        ON ranked.postID = p.postID
+
+                    LEFT JOIN post_tags pt
+                        ON pt.postID = p.postID
+
+                    LEFT JOIN tags t
+                        ON t.tagID = pt.tagID
+
+                    WHERE p.author = ?
+
+                    GROUP BY
+                        p.postID,
+                        ranked.postNumber
+                        
+                    ORDER BY p.dateCreated DESC;`
+
+    db.query(query, [toBinaryUUID(userID)], (err, result) => {
+        if (err) {
+            console.error('Error fetching latest entry', err);
+            res.status(500).json({ error: 'Error fetching latest entry' });
+        } else {
+            res.json(result[0]);
+        }
+    });
+});
+
 app.get('/get-favorite-entries', (req, res) => {
     const {userID, currentPage, entriesPerPage} = req.query;
 
