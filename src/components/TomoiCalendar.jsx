@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ArrowLeft, CaretLeftFill, CaretRightFill, CaretUpFill, CaretDownFill } from 'react-bootstrap-icons';
+import { ArrowLeft, CaretLeftFill, CaretRightFill, CaretUpFill, CaretDownFill, Calendar4Week } from 'react-bootstrap-icons';
 import { Link, useNavigate } from 'react-router-dom'
 import dayjs, {Dayjs} from 'dayjs';
 import { Popover } from '@mui/material';
@@ -132,42 +132,43 @@ function TomoiCalendar() {
 
   return (
     <>
-        <div className='relative flex flex-col grow w-full overflow-y-auto bg-white items-center rounded-xl p-4 gap-3'>
+        <div className='relative flex flex-col grow w-full overflow-hidden bg-white items-center rounded-xl p-4 gap-3 outline-2 outline-dashed outline-[var(--tomoi-gray-d)]'>
+            <Calendar4Week className='absolute size-[15em] text-[var(--tomoi-gray-l)] -bottom-5 right-0 rotate-15 opacity-20'/>
             <div className='flex gap-4 items-center justify-between w-full'>
                 <div className='text-3xl font-bold hover:underline cursor-pointer' onClick={(e) => openPopover(e)}>{currentDate.format('MMMM D, YYYY')}</div>
                 <div className='flex'>
                     <button type='button' className='p-2 rounded-l-md bg-[var(--tomoi-gray)] hover:bg-[var(--tomoi-gray-d)]' onClick={() => (goPrevMonth())}>
                         <CaretLeftFill width={20} height={20}></CaretLeftFill>
-                    </button>
+                    </button> 
                     <button type='button' className='p-2 rounded-r-md bg-[var(--tomoi-gray)] hover:bg-[var(--tomoi-gray-d)] border-dashed border-l-1' onClick={() => (goNextMonth())}>
                         <CaretRightFill width={20} height={20}></CaretRightFill>
                     </button>
                 </div>
             </div>
-            <div className='grid grid-cols-7 w-full items-center justify-center gap-3'>
+            <div className='grid grid-cols-7 w-full items-center justify-center gap-2 z-10'>
                 <div className='grid grid-cols-7 col-span-7 w-full items-center justify-around bg-[var(--tomoi-yellow)] alt-font text-2xl rounded-full'>
                     {weekDays.map((day, index) => (
                         <div key={index} className='text-center'>{day}</div>
                     ))}
                 </div>
                 {dayInfo.prevMonthDays.map((day, index) => (
-                    <div key={index} className='day text-center text-2xl p-2 cursor-pointer text-[var(--tomoi-gray)]' onClick={() => selectPreviousMonthDay(day)}>{day}</div>
+                    <div key={index} className='day text-center text-xl p-2 cursor-pointer text-[var(--tomoi-gray)]' onClick={() => selectPreviousMonthDay(day)}>{day}</div>
                 ))}
 
                 {dayInfo.days.map((day, index) => (
-                    <div key={index} data-text={day} className={'day text-center text-2xl p-2 cursor-pointer'
+                    <div key={index} data-text={day} className={'day text-center text-xl p-2 cursor-pointer'
                         + (loading ? ' text-[var(--tomoi-gray-l)]' : ' text-[var(--tomoi-black)]')
                         + (isItToday(day) ? ' font-bold today' : '')
                         + (currentDate.date() === day ? ' outline-2 outline-dashed outline-[var(--tomoi-yellow)]' : '')
                     }
                     onClick={() => selectCurrentMonthDay(day)}
                     style={{
-                        "backgroundColor" :(datesWithEntries.get(day) ? datesWithEntries.get(day) : 'var(--tomoi-white)')
+                        "backgroundColor" :(datesWithEntries.get(day) ? datesWithEntries.get(day) : 'transparent')
                     }}>{day}</div>
                 ))}
 
                 {dayInfo.remainingDays.map((day, index) => (
-                    <div key={index} className='day text-center text-2xl p-2 text-[var(--tomoi-gray)] cursor-pointer' onClick={() => selectNextMonthDay(day)}>{day}</div>
+                    <div key={index} className='day text-center text-xl p-2 text-[var(--tomoi-gray)] cursor-pointer' onClick={() => selectNextMonthDay(day)}>{day}</div>
                 ))}
             </div>
         </div>
