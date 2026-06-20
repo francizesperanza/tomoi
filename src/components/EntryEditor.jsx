@@ -9,7 +9,7 @@ import { toast} from 'react-hot-toast'
 import StarterKit from '@tiptap/starter-kit'
 import { useMemo } from 'react'
 import './EditorText.css'
-import { BlockquoteLeft, CaretUpFill, CodeSlash, EmojiNeutralFill, Eyedropper, ListOl, ListUl, TagFill, TypeBold, TypeItalic, TypeStrikethrough, TypeUnderline, } from 'react-bootstrap-icons';
+import { Arrow90degLeft, Arrow90degRight, BlockquoteLeft, CaretUpFill, CodeSlash, EmojiNeutralFill, Eyedropper, ListOl, ListUl, TagFill, TypeBold, TypeItalic, TypeStrikethrough, TypeUnderline, } from 'react-bootstrap-icons';
 import { Popover, Chip, Autocomplete, TextField} from '@mui/material';
 import dayjs, {Dayjs} from 'dayjs';
 import { useEntry } from './EntryProvider';
@@ -135,20 +135,34 @@ function EntryEditor({isOpen, onClose, mode}) {
             const color = ctx.editor.getAttributes('textStyle').color || 'var(--tomoi-black)'
 
             return {
-                color,
-                isBlack: color === 'var(--tomoi-black)',
-                isWhite: color === 'var(--tomoi-white)',
-                isGray: color === 'var(--tomoi-gray)',
-                isMagenta: color === 'var(--tomoi-magenta)',
-                isPink: color === 'var(--tomoi-pink)',
-                isNavy: color === 'var(--tomoi-navy)',
-                isViolet: color === 'var(--tomoi-violet)',
-                isRed: color === 'var(--tomoi-red)',
-                isOrange: color === 'var(--tomoi-orange)',
-                isYellow: color === 'var(--tomoi-yellow)',
-                isBlue: color === 'var(--tomoi-blue)',
-                isCyan: color === 'var(--tomoi-cyan)',
-                isGreen: color === 'var(--tomoi-green)',
+                // Text formatting
+                isBold: ctx.editor.isActive('bold') ?? false,
+                canBold: ctx.editor.can().chain().toggleBold().run() ?? false,
+                isItalic: ctx.editor.isActive('italic') ?? false,
+                canItalic: ctx.editor.can().chain().toggleItalic().run() ?? false,
+                isUnderline: ctx.editor.isActive('underline') ?? false,
+                canUnderline: ctx.editor.can().chain().toggleUnderline().run() ?? false,
+                isStrike: ctx.editor.isActive('strike') ?? false,
+                canStrike: ctx.editor.can().chain().toggleStrike().run() ?? false,
+                isCode: ctx.editor.isActive('code') ?? false,
+                canCode: ctx.editor.can().chain().toggleCode().run() ?? false,
+                canClearMarks: ctx.editor.can().chain().unsetAllMarks().run() ?? false,
+
+                // Block types
+                isParagraph: ctx.editor.isActive('paragraph') ?? false,
+                isHeading1: ctx.editor.isActive('heading', { level: 1 }) ?? false,
+                isHeading2: ctx.editor.isActive('heading', { level: 2 }) ?? false,
+                isHeading3: ctx.editor.isActive('heading', { level: 3 }) ?? false,
+
+                // Lists and blocks
+                isBulletList: ctx.editor.isActive('bulletList') ?? false,
+                isOrderedList: ctx.editor.isActive('orderedList') ?? false,
+                isCodeBlock: ctx.editor.isActive('codeBlock') ?? false,
+                isBlockquote: ctx.editor.isActive('blockquote') ?? false,
+
+                // History
+                canUndo: ctx.editor.can().chain().undo().run() ?? false,
+                canRedo: ctx.editor.can().chain().redo().run() ?? false,
             }
         },
     })
@@ -252,7 +266,7 @@ function EntryEditor({isOpen, onClose, mode}) {
                 <LoadingComponent></LoadingComponent>
             </div>}
             <Modal isOpen={isOpen} onClose={handleSave}>
-                <div className='relative min-h-[65vh] flex flex-col gap-2 justify-start items-start'>
+                <div className='relative min-h-[65vh] flex flex-col gap-2 justify-center items-center'>
                     <div className='absolute -top-4 right-0 text-xs italic text-[var(--tomoi-gray-d)]'>It will autosave when you close it.</div>
                     <textarea value={title} placeholder='Entry Title' className='resize-none outline-none overflow-hidden p-1 border-b-1 border-[var(--tomoi-gray)] text-5xl flex font-bold w-full field-sizing-content'
                     onChange={(e) => setTitle(e.target.value)}></textarea>
@@ -260,7 +274,7 @@ function EntryEditor({isOpen, onClose, mode}) {
                         <div>Last edited {lastEditedDate}</div>
                     </div>
                     <div className='text-[var(--tomoi-black)] flex w-full field-sizing-content items-center'>
-                        <div className='flex w-full bg-[var(--tomoi-gray-l)] px-3 py-2  rounded-lg border-1 border-dashed items-start justify-between items-stretch'>
+                        <div className='flex w-full bg-[var(--tomoi-gray-l)] px-3 py-2 rounded-lg border-1 border-dashed items-start justify-between items-stretch'>
                             <div className='flex gap-3 px-3 py-1 rounded-lg w-[50%] items-center'>
                                 <div className='flex items-center gap-3'>
                                     <EmojiNeutralFill width={'1em'} height={'1em'}></EmojiNeutralFill>
@@ -338,54 +352,176 @@ function EntryEditor({isOpen, onClose, mode}) {
                         </div>
                     </div>
                     <EditorContext.Provider value={providerValue}>
+                        <div className='shadow-sm/40 z-10 sticky -top-15 flex w-fit bg-[var(--tomoi-white)] divide-x-1 divide-dashed justify-center items-center rounded-lg border-1 border-dashed items-stretch'>
+                            <button
+                            onClick={() => editor.chain().undo().run()}
+                            disabled={!editorState.canUndo}
+                            className={'styling-btn rounded-l-lg ' + (!editorState.canUndo ? 'styling-btn-disabled' : '')}
+                            >
+                            <Arrow90degLeft width={'.8em'} height={'.8em'}></Arrow90degLeft>
+                            </button>
+                            <button
+                            onClick={() => editor.chain().redo().run()}
+                            disabled={!editorState.canRedo}
+                            className={'styling-btn ' + (!editorState.canRedo ? 'styling-btn-disabled' : '')}
+                            >
+                            <Arrow90degRight width={'.8em'} height={'.8em'}></Arrow90degRight>
+                            </button>
+                            <button
+                            onClick={() => editor.chain().focus().toggleBold().run()}
+                            disabled={!editorState.canBold}
+                            className={'styling-btn ' + (editorState.isBold ? 'active' : '')}
+                            >
+                            <TypeBold></TypeBold>
+                            </button>
+                            <button
+                            onClick={() => editor.chain().focus().toggleItalic().run()}
+                            disabled={!editorState.canItalic}
+                            className={'styling-btn ' + (editorState.isItalic ? 'active' : '')}
+                            >
+                            <TypeItalic></TypeItalic>
+                            </button>
+                            <button
+                            onClick={() => editor.chain().focus().toggleUnderline().run()}
+                            disabled={!editorState.canUnderline}
+                            className={'styling-btn ' + (editorState.isUnderline ? 'active' : '')}
+                            >
+                            <TypeUnderline></TypeUnderline>
+                            </button>
+                            <button
+                            onClick={() => editor.chain().focus().toggleStrike().run()}
+                            disabled={!editorState.canStrike}
+                            className={'styling-btn ' + (editorState.isStrike ? 'active' : '')}
+                            >
+                            <TypeStrikethrough></TypeStrikethrough>
+                            </button>
+
+                            <div className='flex divide-x-1 divide-[var(--tomoi-gray-d)] divide-dashed items-stretch'>
+                                <button
+                                onClick={(e) => editor.chain().focus().setColor(lastColor).run()}
+                                className={'styling-btn leading-[1em]'}
+                                >
+                                A
+                                <div className='min-h-1 min-w-5' style={{
+                                    'backgroundColor' : lastColor,
+                                }}></div>
+                                </button>
+                                <button className='styling-btn' onClick={(e) => openColorPopover(e)}>
+                                    <CaretUpFill width={'.8em'} height={'.8em'}></CaretUpFill>
+                                </button>
+                            </div>
+
+                            <div className='flex divide-x-1 divide-[var(--tomoi-gray-d)] divide-dashed items-stretch'>
+                                <button
+                                onClick={(e) => editor.chain().focus().setBackgroundColor(lastHighlightColor).run()}
+                                className={'styling-btn leading-[1em]'}
+                                >
+                                    <div className='min-h-1 min-w-5' style={{
+                                        'backgroundColor' : lastHighlightColor,
+                                    }}>A</div>
+                                </button>
+                                <button className='styling-btn' onClick={(e) => openHighlightColorPopover(e)}>
+                                    <CaretUpFill width={'.8em'} height={'.8em'}></CaretUpFill>
+                                </button>
+                            </div>
+                            <button
+                            onClick={() => editor.chain().focus().setHeading({ level: 1 }).run()}
+                            className={'styling-btn font-bold'}
+                            >
+                            h1
+                            </button>
+                            <button
+                            onClick={() => editor.chain().focus().setHeading({ level: 2 }).run()}
+                            className={'styling-btn font-semibold'}
+                            >
+                            h2
+                            </button>
+                            <button
+                            onClick={() => editor.chain().focus().setHeading({ level: 3 }).run()}
+                            className={'styling-btn'}
+                            >
+                            h3
+                            </button>
+                            <button
+                            onClick={() => editor.chain().focus().toggleBulletList('bulletList', 'listItem').run()}
+                            className={'styling-btn'}
+                            >
+                            <ListUl width={'1.5em'} height={'1.5em'}></ListUl>
+                            </button>
+                            <button
+                            onClick={() => editor.chain().focus().toggleOrderedList('orderedList', 'listItem').run()}
+                            className={'styling-btn'}
+                            >
+                            <ListOl width={'1.5em'} height={'1.5em'}></ListOl>
+                            </button>
+                            <button
+                            onClick={() => editor.chain().focus().setCodeBlock().run()}
+                            className={'styling-btn'}
+                            >
+                            <CodeSlash width={'1.2em'} height={'1.2em'}></CodeSlash>
+                            </button>
+                            <button
+                            onClick={() => editor.chain().focus().setBlockquote().run()}
+                            className={'styling-btn'}
+                            >
+                            <BlockquoteLeft width={'1.2em'} height={'1.2em'}></BlockquoteLeft>
+                            </button>
+                            <button
+                            onClick={() => editor.chain().focus().setHorizontalRule().run()}
+                            className={'styling-btn rounded-r-xl text-center'}
+                            >
+                            ———
+                            </button>
+                        </div>
                         <EditorContent className='prose max-w-none w-full' editor={editor} />
                         <FloatingMenu editor={editor}>
-                            <div className="bg-white shadow-sm/40 rounded-lg border-1 border-dashed text-md flex divide-x-1 divide-dashed items-center justify-center h-[1.75em] items-stretch">
+                            <div className="z-15 bg-white shadow-sm/40 rounded-lg border-1 border-dashed text-md flex divide-x-1 divide-dashed items-center justify-center h-[2em] items-stretch">
+                                
                                 <button
                                 onClick={() => editor.chain().focus().setHeading({ level: 1 }).run()}
-                                className={'px-2 hover:bg-[var(--tomoi-gray-d)] rounded-l-lg font-bold'}
+                                className={'styling-btn rounded-l-lg font-bold'}
                                 >
                                 h1
                                 </button>
                                 <button
                                 onClick={() => editor.chain().focus().setHeading({ level: 2 }).run()}
-                                className={'px-2 hover:bg-[var(--tomoi-gray-d)] font-semibold'}
+                                className={'styling-btn font-semibold'}
                                 >
                                 h2
                                 </button>
                                 <button
                                 onClick={() => editor.chain().focus().setHeading({ level: 3 }).run()}
-                                className={'px-2 hover:bg-[var(--tomoi-gray-d)]'}
+                                className={'styling-btn '}
                                 >
                                 h3
                                 </button>
                                 <button
                                 onClick={() => editor.chain().focus().toggleBulletList('bulletList', 'listItem').run()}
-                                className={'px-2 hover:bg-[var(--tomoi-gray-d)]'}
+                                className={'styling-btn '}
                                 >
                                 <ListUl width={'1.5em'} height={'1.5em'}></ListUl>
                                 </button>
                                 <button
                                 onClick={() => editor.chain().focus().toggleOrderedList('orderedList', 'listItem').run()}
-                                className={'px-2 hover:bg-[var(--tomoi-gray-d)]'}
+                                className={'styling-btn '}
                                 >
                                 <ListOl width={'1.5em'} height={'1.5em'}></ListOl>
                                 </button>
                                 <button
                                 onClick={() => editor.chain().focus().setCodeBlock().run()}
-                                className={'px-2 hover:bg-[var(--tomoi-gray-d)]'}
+                                className={'styling-btn '}
                                 >
                                 <CodeSlash width={'1.2em'} height={'1.2em'}></CodeSlash>
                                 </button>
                                 <button
                                 onClick={() => editor.chain().focus().setBlockquote().run()}
-                                className={'px-2 hover:bg-[var(--tomoi-gray-d)]'}
+                                className={'styling-btn '}
                                 >
                                 <BlockquoteLeft width={'1.2em'} height={'1.2em'}></BlockquoteLeft>
                                 </button>
                                 <button
                                 onClick={() => editor.chain().focus().setHorizontalRule().run()}
-                                className={'px-2 hover:bg-[var(--tomoi-gray-d)] rounded-r-lg text-center'}
+                                className={'styling-btn rounded-r-lg text-center'}
                                 >
                                 ———
                                 </button>
@@ -397,28 +533,32 @@ function EntryEditor({isOpen, onClose, mode}) {
                             duration: 300,
                             interactive: true,
                         }}>
-                            <div className="bg-white shadow-sm/40 rounded-lg border-1 border-dashed text-md flex divide-x-1 divide-dashed items-center justify-center h-[1.75em] items-stretch">
+                            <div className="z-15 bg-white shadow-sm/40 rounded-lg border-1 border-dashed text-md flex divide-x-1 divide-dashed items-center justify-center h-[2em] items-stretch">
                                 <button
                                 onClick={() => editor.chain().focus().toggleBold().run()}
-                                className={'px-2 hover:bg-[var(--tomoi-gray-d)] rounded-l-lg font-bold'}
+                                disabled={!editorState.canBold}
+                                className={'styling-btn rounded-l-lg font-bold ' + (editorState.isBold ? 'active' : '')}
                                 >
                                 <TypeBold></TypeBold>
                                 </button>
                                 <button
                                 onClick={() => editor.chain().focus().toggleItalic().run()}
-                                className={'px-2 hover:bg-[var(--tomoi-gray-d)] font-semibold'}
+                                disabled={!editorState.canItalic}
+                                className={'styling-btn font-semibold ' + (editorState.isItalic ? 'active' : '')}
                                 >
                                 <TypeItalic></TypeItalic>
                                 </button>
                                 <button
                                 onClick={() => editor.chain().focus().toggleUnderline().run()}
-                                className={'px-2 hover:bg-[var(--tomoi-gray-d)]'}
+                                disabled={!editorState.canUnderline}
+                                className={'styling-btn ' + (editorState.isUnderline ? 'active' : '')}
                                 >
                                 <TypeUnderline></TypeUnderline>
                                 </button>
                                 <button
                                 onClick={() => editor.chain().focus().toggleStrike().run()}
-                                className={'px-2 hover:bg-[var(--tomoi-gray-d)]'}
+                                disabled={!editorState.canStrike}
+                                className={'styling-btn ' + (editorState.isStrike ? 'active' : '')}
                                 >
                                 <TypeStrikethrough></TypeStrikethrough>
                                 </button>
@@ -426,14 +566,14 @@ function EntryEditor({isOpen, onClose, mode}) {
                                 <div className='flex divide-x-1 divide-[var(--tomoi-gray-d)] divide-dashed items-stretch'>
                                     <button
                                     onClick={(e) => editor.chain().focus().setColor(lastColor).run()}
-                                    className={'px-2 hover:bg-[var(--tomoi-gray-d)] items-stretch flex flex-col justify-center leading-[1em]'}
+                                    className={'styling-btn leading-[1em]'}
                                     >
                                     A
                                     <div className='min-h-1 min-w-5' style={{
                                         'backgroundColor' : lastColor,
                                     }}></div>
                                     </button>
-                                    <button className='px-1 flex items-center justify-center hover:bg-[var(--tomoi-gray-d)]' onClick={(e) => openColorPopover(e)}>
+                                    <button className='styling-btn ' onClick={(e) => openColorPopover(e)}>
                                         <CaretUpFill width={'.8em'} height={'.8em'}></CaretUpFill>
                                     </button>
                                 </div>
@@ -441,38 +581,38 @@ function EntryEditor({isOpen, onClose, mode}) {
                                 <div className='flex divide-x-1 divide-[var(--tomoi-gray-d)] divide-dashed items-stretch'>
                                     <button
                                     onClick={(e) => editor.chain().focus().setBackgroundColor(lastHighlightColor).run()}
-                                    className={'px-2 hover:bg-[var(--tomoi-gray-d)] items-stretch flex flex-col justify-center leading-[1em]'}
+                                    className={'styling-btn leading-[1em]'}
                                     >
                                         <div className='min-h-1 min-w-5' style={{
                                             'backgroundColor' : lastHighlightColor,
                                         }}>A</div>
                                     </button>
-                                    <button className='px-1 flex items-center justify-center hover:bg-[var(--tomoi-gray-d)]' onClick={(e) => openHighlightColorPopover(e)}>
+                                    <button className='styling-btn ' onClick={(e) => openHighlightColorPopover(e)}>
                                         <CaretUpFill width={'.8em'} height={'.8em'}></CaretUpFill>
                                     </button>
                                 </div>
 
                                 <button
                                 onClick={() => editor.chain().focus().toggleBulletList('bulletList', 'listItem').run()}
-                                className={'px-2 hover:bg-[var(--tomoi-gray-d)]'}
+                                className={'styling-btn '}
                                 >
                                 <ListUl width={'1.5em'} height={'1.5em'}></ListUl>
                                 </button>
                                 <button
                                 onClick={() => editor.chain().focus().toggleOrderedList('orderedList', 'listItem').run()}
-                                className={'px-2 hover:bg-[var(--tomoi-gray-d)]'}
+                                className={'styling-btn '}
                                 >
                                 <ListOl width={'1.5em'} height={'1.5em'}></ListOl>
                                 </button>
                                 <button
                                 onClick={() => editor.chain().focus().toggleCodeBlock().run()}
-                                className={'px-2 hover:bg-[var(--tomoi-gray-d)]'}
+                                className={'styling-btn '}
                                 >
                                 <CodeSlash width={'1.2em'} height={'1.2em'}></CodeSlash>
                                 </button>
                                 <button
                                 onClick={() => editor.chain().focus().toggleBlockquote().run()}
-                                className={'px-2 hover:bg-[var(--tomoi-gray-d)]'}
+                                className={'styling-btn rounded-r-lg'}
                                 >
                                 <BlockquoteLeft width={'1.2em'} height={'1.2em'}></BlockquoteLeft>
                                 </button>
