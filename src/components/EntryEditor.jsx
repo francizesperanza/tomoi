@@ -4,12 +4,13 @@ import { useAuth } from './AuthProvider'
 import { useEditor, EditorContent, EditorContext, useEditorState } from '@tiptap/react'
 import { FloatingMenu, BubbleMenu } from '@tiptap/react/menus'
 import { Placeholder} from '@tiptap/extensions'
+import {TextAlign} from '@tiptap/extension-text-align'
 import { TextStyleKit, Color } from '@tiptap/extension-text-style'
 import { toast} from 'react-hot-toast'
 import StarterKit from '@tiptap/starter-kit'
 import { useMemo } from 'react'
 import './EditorText.css'
-import { Arrow90degLeft, Arrow90degRight, BlockquoteLeft, CaretUpFill, CodeSlash, EmojiNeutralFill, Eyedropper, ListOl, ListUl, TagFill, TypeBold, TypeItalic, TypeStrikethrough, TypeUnderline, } from 'react-bootstrap-icons';
+import { Arrow90degLeft, Arrow90degRight, BlockquoteLeft, CaretUpFill, CodeSlash, EmojiNeutralFill, Eyedropper, Justify, ListOl, ListUl, TagFill, TextCenter, TextLeft, TextRight, TypeBold, TypeItalic, TypeStrikethrough, TypeUnderline, } from 'react-bootstrap-icons';
 import { Popover, Chip, Autocomplete, TextField} from '@mui/material';
 import dayjs, {Dayjs} from 'dayjs';
 import { useEntry } from './EntryProvider';
@@ -45,6 +46,9 @@ function EntryEditor({isOpen, onClose, mode}) {
         extensions: [
             StarterKit, 
             TextStyleKit,
+            TextAlign.configure({
+                types: ['heading', 'paragraph'],
+            }),
             Placeholder.configure({
                 placeholder: 'Write something ...',
             })
@@ -147,6 +151,10 @@ function EntryEditor({isOpen, onClose, mode}) {
                 isCode: ctx.editor.isActive('code') ?? false,
                 canCode: ctx.editor.can().chain().toggleCode().run() ?? false,
                 canClearMarks: ctx.editor.can().chain().unsetAllMarks().run() ?? false,
+                isTextLeftAlign: ctx.editor.isActive({textAlign : 'left'}) ?? false,
+                isTextCenterAlign: ctx.editor.isActive({textAlign : 'center'}) ?? false,
+                isTextRightAlign: ctx.editor.isActive({textAlign : 'right'}) ?? false,
+                isTextJustifyAlign: ctx.editor.isActive({textAlign : 'justify'}) ?? false,
 
                 // Block types
                 isParagraph: ctx.editor.isActive('paragraph') ?? false,
@@ -367,6 +375,39 @@ function EntryEditor({isOpen, onClose, mode}) {
                             >
                             <Arrow90degRight width={'.8em'} height={'.8em'}></Arrow90degRight>
                             </button>
+
+                            <button
+                            onClick={() => editor.chain().focus().setTextAlign('left').run()}
+                            disabled={editorState.isTextLeftAlign}
+                            className={'styling-btn ' + (editorState.isTextLeftAlign ? 'active' : '')}
+                            >
+                            <TextLeft></TextLeft>
+                            </button>
+
+                            <button
+                            onClick={() => editor.chain().focus().setTextAlign('center').run()}
+                            disabled={editorState.isTextCenterAlign}
+                            className={'styling-btn ' + (editorState.isTextCenterAlign ? 'active' : '')}
+                            >
+                            <TextCenter></TextCenter>
+                            </button>
+
+                            <button
+                            onClick={() => editor.chain().focus().setTextAlign('right').run()}
+                            disabled={editorState.isTextRightAlign}
+                            className={'styling-btn ' + (editorState.isTextRightAlign ? 'active' : '')}
+                            >
+                            <TextRight></TextRight>
+                            </button>
+
+                            <button
+                            onClick={() => editor.chain().focus().setTextAlign('justify').run()}
+                            disabled={editorState.isTextJustifyAlign}
+                            className={'styling-btn ' + (editorState.isTextJustifyAlign ? 'active' : '')}
+                            >
+                            <Justify></Justify>
+                            </button>
+
                             <button
                             onClick={() => editor.chain().focus().toggleBold().run()}
                             disabled={!editorState.canBold}
@@ -475,7 +516,7 @@ function EntryEditor({isOpen, onClose, mode}) {
                         </div>
                         <EditorContent className='prose max-w-none w-full' editor={editor} />
                         <FloatingMenu editor={editor}>
-                            <div className="z-15 bg-white shadow-sm/40 rounded-lg border-1 border-dashed text-md flex divide-x-1 divide-dashed items-center justify-center h-[2em] items-stretch">
+                            <div className="z-20 bg-white shadow-sm/40 rounded-lg border-1 border-dashed text-md flex divide-x-1 divide-dashed items-center justify-center h-[2em] items-stretch">
                                 
                                 <button
                                 onClick={() => editor.chain().focus().setHeading({ level: 1 }).run()}
@@ -533,7 +574,7 @@ function EntryEditor({isOpen, onClose, mode}) {
                             duration: 300,
                             interactive: true,
                         }}>
-                            <div className="z-15 bg-white shadow-sm/40 rounded-lg border-1 border-dashed text-md flex divide-x-1 divide-dashed items-center justify-center h-[2em] items-stretch">
+                            <div className="z-20 bg-white shadow-sm/40 rounded-lg border-1 border-dashed text-md flex divide-x-1 divide-dashed items-center justify-center h-[2em] items-stretch">
                                 <button
                                 onClick={() => editor.chain().focus().toggleBold().run()}
                                 disabled={!editorState.canBold}
