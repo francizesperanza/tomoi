@@ -168,27 +168,3 @@ input[type="checkbox"]:checked::after {
 .letter {
   opacity: 0;
 }
-
-.styling-btn {
-  padding-inline: calc(var(--spacing) * 2);
-  padding-block: calc(var(--spacing) * 1);
-  cursor: pointer;
-}
-
-.styling-btn-disabled {
-  background-color: var(--tomoi-gray);
-  color: var(--tomoi-gray-d);
-}
-
-.styling-btn:hover {
-  background-color: var(--tomoi-yellow-l);
-}
-
-.styling-btn.styling-btn-disabled:hover {
-  background-color: var(--tomoi-gray);
-  cursor: default;
-}
-
-.active.styling-btn {
-  background-color: var(--tomoi-yellow);
-}

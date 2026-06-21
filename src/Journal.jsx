@@ -8,6 +8,8 @@ import EntryEditor from './components/EntryEditor';
 import { useEditor, EditorContent, EditorContext, useEditorState } from '@tiptap/react';
 import { generateHTML } from '@tiptap/core'
 import { TextStyleKit, Color } from '@tiptap/extension-text-style'
+import Image from "@tiptap/extension-image";
+import { TextAlign } from '@tiptap/extension-text-align'
 import StarterKit from '@tiptap/starter-kit'
 import { Placeholder, CharacterCount} from '@tiptap/extensions'
 import { animate, stagger, createScope, createTimer, set, random, createTimeline} from 'animejs'
@@ -140,6 +142,15 @@ function Journal() {
         extensions: [
             StarterKit, 
             TextStyleKit,
+            Image.configure({
+                resize: {
+                    enabled: true,
+                    directions: ['top', 'bottom', 'left', 'right']
+                }
+            }),
+            TextAlign.configure({
+                types: ['heading', 'paragraph'],
+            }),
             Placeholder.configure({
                 placeholder: 'Loading content',
             })
@@ -159,6 +170,8 @@ function Journal() {
     })
 
     useEffect(() => {
+        if (!editor) return;
+
         if (selectedEntry != undefined){
             try {
                 editor.commands.setContent(JSON.parse(selectedEntry.content))
@@ -171,7 +184,7 @@ function Journal() {
             editor.commands.setContent("empty")
             setHasEntry(false)
         }
-    }, [selectedEntry])
+    }, [selectedEntry, editor])
 
     useEffect(() => {
         scope.current = createScope({ root }).add( self => {
@@ -355,7 +368,7 @@ function Journal() {
                                                                 <div className='absolute text-md font-bold z-50 select-none pointer-events-none right-2'>#{entry.postNumber}</div>
                                                                 <div className='absolute top-3'
                                                                     dangerouslySetInnerHTML={{
-                                                                        __html: generateHTML(JSON.parse(entry.content), [StarterKit, TextStyleKit])
+                                                                        __html: generateHTML(JSON.parse(entry.content), [StarterKit, TextStyleKit, Image, TextAlign])
                                                                     }}>
                                                                 </div>
                                                                 <div className='absolute inset-0 rounded-xl bg-linear-to-b from-1% from-transparent via-[var(--tomoi-white)] via-40% to-[var(--tomoi-white)] to-70% z-10'></div>

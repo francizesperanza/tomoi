@@ -3,19 +3,22 @@ import Modal from './Modal';
 import { useAuth } from './AuthProvider'
 import { useEditor, EditorContent, EditorContext, useEditorState } from '@tiptap/react'
 import { FloatingMenu, BubbleMenu } from '@tiptap/react/menus'
-import { Placeholder} from '@tiptap/extensions'
-import {TextAlign} from '@tiptap/extension-text-align'
+import { Placeholder, Dropcursor } from '@tiptap/extensions'
+import { TextAlign } from '@tiptap/extension-text-align'
 import { TextStyleKit, Color } from '@tiptap/extension-text-style'
 import { toast} from 'react-hot-toast'
 import StarterKit from '@tiptap/starter-kit'
+import Image from "@tiptap/extension-image";
 import { useMemo } from 'react'
 import './EditorText.css'
-import { Arrow90degLeft, Arrow90degRight, BlockquoteLeft, CaretUpFill, CodeSlash, EmojiNeutralFill, Eyedropper, Justify, ListOl, ListUl, TagFill, TextCenter, TextLeft, TextRight, TypeBold, TypeItalic, TypeStrikethrough, TypeUnderline, } from 'react-bootstrap-icons';
+import { Arrow90degLeft, Arrow90degRight, BlockquoteLeft, CardImage, CaretUpFill, CodeSlash, EmojiNeutralFill, Eyedropper, Justify, ListOl, ListUl, TagFill, TextCenter, TextLeft, TextRight, TypeBold, TypeItalic, TypeStrikethrough, TypeUnderline, } from 'react-bootstrap-icons';
 import { Popover, Chip, Autocomplete, TextField} from '@mui/material';
 import dayjs, {Dayjs} from 'dayjs';
 import { useEntry } from './EntryProvider';
+import { useUploadThing } from '../utils/uploadthing';
 import axios from 'axios'
 import LoadingComponent from './LoadingComponent';
+
 
 function EntryEditor({isOpen, onClose, mode}) {
     const {user} = useAuth();
@@ -29,6 +32,8 @@ function EntryEditor({isOpen, onClose, mode}) {
     const [editorContent, setEditorContent] = useState('');
     const [title, setTitle] = useState('');
     const [loading, setLoading] = useState(false);
+    const { startUpload } = useUploadThing("imageUploader");
+    const fileUploadRef = useRef(null)
 
     const lastEditedDate = mode === 'new' ? dayjs(new Date()).format('MMMM DD, YYYY hh:mm A') : dayjs(selectedEntry?.lastEdited).format('MMMM DD, YYYY hh:mm A')
   
@@ -46,6 +51,13 @@ function EntryEditor({isOpen, onClose, mode}) {
         extensions: [
             StarterKit, 
             TextStyleKit,
+            Dropcursor,
+            Image.configure({
+                resize: {
+                    enabled: true,
+                    alwaysPreserveAspectRatio: true
+                }
+            }),
             TextAlign.configure({
                 types: ['heading', 'paragraph'],
             }),
@@ -104,7 +116,6 @@ function EntryEditor({isOpen, onClose, mode}) {
         if (!editor) return;
 
         if (selectedEntry){
-            console.log(selectedEntry)
             editor.commands.setContent(JSON.parse(selectedEntry.content))
             setTitle(selectedEntry.title)
             setFeeling(selectedEntry.feeling)
@@ -265,6 +276,24 @@ function EntryEditor({isOpen, onClose, mode}) {
         }
         setLoading(false)
         onClose();
+    }
+
+    const handleImageUpload = async (file) => {
+        const result = await startUpload([file]);
+
+        if (!result?.length) return;
+
+        editor
+            ?.chain()
+            .focus()
+            .setImage({
+            src: result[0].ufsUrl,
+            })
+            .run();
+    };
+
+    const triggerFileUpload = () => {
+        fileUploadRef.current?.click()
     }
 
     return (
@@ -509,9 +538,20 @@ function EntryEditor({isOpen, onClose, mode}) {
                             </button>
                             <button
                             onClick={() => editor.chain().focus().setHorizontalRule().run()}
-                            className={'styling-btn rounded-r-xl text-center'}
+                            className={'styling-btn text-center'}
                             >
                             ———
+                            </button>
+                            <button className='styling-btn rounded-r-lg' onClick={() => triggerFileUpload()}>
+                                <CardImage></CardImage>
+                                <input
+                                ref={fileUploadRef}
+                                className='hidden'
+                                type="file"
+                                accept="image/*"
+                                onChange={(e) =>
+                                    handleImageUpload(e.target.files[0])
+                                }/>
                             </button>
                         </div>
                         <EditorContent className='prose max-w-none w-full' editor={editor} />

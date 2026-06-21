@@ -3,6 +3,11 @@ const app = express();
 const cors = require('cors');
 const mysql = require('mysql2');
 const dotenv = require('dotenv');
+
+dotenv.config({
+    path: '../.env'
+});
+
 const bcrypt = require('bcrypt');
 const crypto = require('crypto');
 const session = require('express-session');
@@ -10,6 +15,7 @@ const { encrypt, decrypt } = require('./helper');
 const { fromBinaryUUID, toBinaryUUID, createBinaryUUID} = require("binary-uuid");
 const seedPosts = require('./scripts/testing');
 const dayjs = require('dayjs');
+const { uploadthingHandler } = require('./uploadthing');
 
 const corsOptions = {
     origin: 'http://localhost:5173',
@@ -18,9 +24,6 @@ const corsOptions = {
 
 app.use(express.json());
 app.use(cors(corsOptions));
-dotenv.config({
-    path: '../.env'
-});
 
 app.use(session({
     secret: process.env.SESSION_SECRET,
@@ -28,6 +31,10 @@ app.use(session({
     saveUninitialized: false,
     cookie: { httpOnly: true, secure: false, sameSite: "lax", maxAge: 7 * 24 * 60 * 60 * 1000 }
 }));
+
+app.use(
+  "/api/uploadthing", uploadthingHandler
+);
 
 const saltRounds = parseInt(process.env.SALT_ROUNDS);
 const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
@@ -565,24 +572,13 @@ app.get('/get-all-entries', (req, res) => {
     const query = `SELECT
                         p.*,
                         c.*,
-                        ranked.postNumber,
+                        ROW_NUMBER() OVER (ORDER BY p.dateCreated ASC) AS postNumber,
                         COUNT(*) OVER() AS total,
-                        CASE
-                            WHEN COUNT(t.tagName) = 0 THEN JSON_ARRAY()
-                            ELSE JSON_ARRAYAGG(t.tagName)
-                        END AS tags
+                        COALESCE(JSON_ARRAYAGG(t.tagName), JSON_ARRAY()) AS tags
                     FROM posts p
 
                     JOIN contents c
                         ON p.contentID = c.contentID
-
-                    JOIN (
-                        SELECT
-                            postID,
-                            ROW_NUMBER() OVER (ORDER BY dateCreated ASC) AS postNumber
-                        FROM posts
-                    ) ranked
-                        ON ranked.postID = p.postID
 
                     LEFT JOIN post_tags pt
                         ON pt.postID = p.postID
@@ -591,23 +587,24 @@ app.get('/get-all-entries', (req, res) => {
                         ON t.tagID = pt.tagID
 
                     WHERE p.author = ?
-                    ${filterQueryMap[filterOption]}
+                    ${filterQueryMap[filterOption] ?? ''}
 
                     GROUP BY
                         p.postID,
-                        ranked.postNumber
-                        
-                    ORDER BY ${sortQueryMap[sortOption]}
-                    
+                        c.contentID
+
+                    ORDER BY ${sortQueryMap[sortOption] ?? 'p.lastEdited DESC'}
+
                     LIMIT ?
-                    
                     OFFSET ?;`
+
     //const query = 'SELECT * FROM posts JOIN contents ON posts.contentID = contents.contentID WHERE author = ? AND dateCreated >= ? AND dateCreated < ?';
     db.query(query, [toBinaryUUID(userID), limit, offset], (err, result) => {
         if (err) {
             console.error('Error fetching all entries', err);
             res.status(500).json({ error: 'Error fetching all entries' });
         } else {
+            console.log(result)
             res.json(result);
         }
     });
@@ -619,24 +616,13 @@ app.get('/get-latest-entry', (req, res) => {
     const query = `SELECT
                         p.*,
                         c.*,
-                        ranked.postNumber,
+                        ROW_NUMBER() OVER (ORDER BY p.dateCreated ASC) AS postNumber,
                         COUNT(*) OVER() AS total,
-                        CASE
-                            WHEN COUNT(t.tagName) = 0 THEN JSON_ARRAY()
-                            ELSE JSON_ARRAYAGG(t.tagName)
-                        END AS tags
+                        COALESCE(JSON_ARRAYAGG(t.tagName), JSON_ARRAY()) AS tags
                     FROM posts p
 
                     JOIN contents c
                         ON p.contentID = c.contentID
-
-                    JOIN (
-                        SELECT
-                            postID,
-                            ROW_NUMBER() OVER (ORDER BY dateCreated ASC) AS postNumber
-                        FROM posts
-                    ) ranked
-                        ON ranked.postID = p.postID
 
                     LEFT JOIN post_tags pt
                         ON pt.postID = p.postID
@@ -648,8 +634,8 @@ app.get('/get-latest-entry', (req, res) => {
 
                     GROUP BY
                         p.postID,
-                        ranked.postNumber
-                        
+                        c.contentID
+
                     ORDER BY p.dateCreated DESC;`
 
     db.query(query, [toBinaryUUID(userID)], (err, result) => {
@@ -668,24 +654,13 @@ app.get('/get-last-edited-entry', (req, res) => {
     const query = `SELECT
                         p.*,
                         c.*,
-                        ranked.postNumber,
+                        ROW_NUMBER() OVER (ORDER BY p.dateCreated ASC) AS postNumber,
                         COUNT(*) OVER() AS total,
-                        CASE
-                            WHEN COUNT(t.tagName) = 0 THEN JSON_ARRAY()
-                            ELSE JSON_ARRAYAGG(t.tagName)
-                        END AS tags
+                        COALESCE(JSON_ARRAYAGG(t.tagName), JSON_ARRAY()) AS tags
                     FROM posts p
 
                     JOIN contents c
                         ON p.contentID = c.contentID
-
-                    JOIN (
-                        SELECT
-                            postID,
-                            ROW_NUMBER() OVER (ORDER BY dateCreated ASC) AS postNumber
-                        FROM posts
-                    ) ranked
-                        ON ranked.postID = p.postID
 
                     LEFT JOIN post_tags pt
                         ON pt.postID = p.postID
@@ -697,8 +672,8 @@ app.get('/get-last-edited-entry', (req, res) => {
 
                     GROUP BY
                         p.postID,
-                        ranked.postNumber
-                        
+                        c.contentID
+
                     ORDER BY p.lastEdited DESC;`
 
     db.query(query, [toBinaryUUID(userID)], (err, result) => {

@@ -5,6 +5,8 @@ import { toast} from 'react-hot-toast';
 import Navbar from './components/Navbar';
 import TomoiCalendar from './components/TomoiCalendar';
 import { TextStyleKit, Color } from '@tiptap/extension-text-style'
+import Image from "@tiptap/extension-image";
+import { TextAlign } from '@tiptap/extension-text-align'
 import StarterKit from '@tiptap/starter-kit'
 import { generateHTML } from '@tiptap/core'
 import { useEntry } from './components/EntryProvider';
@@ -51,7 +53,7 @@ const feelingMap = {
 
 function Home() {
   const navigate = useNavigate();
-  const {entrySet, setSelectedDate, setLoading, loading} = useEntry();
+  const {entrySet, setSelectedDate, setLoading, loading, setView} = useEntry();
   const {user} = useAuth();
   const [latestEntry, setLatestEntry] = useState({});
   const [lastActivityEntry, setLastActivityEntry] = useState(null);
@@ -61,10 +63,12 @@ function Home() {
   const writeTodayEntry = () => {
     setSelectedDate(dayjs(Date.now()))
     console.log(dayjs().isToday())
+    setView('calendar')
     navigate('/journal')
   }
   const goToLatestActivityEntry = (date) => {
     setSelectedDate(dayjs(date))
+    setView('calendar')
     navigate('/journal')
   }
 
@@ -109,7 +113,6 @@ function Home() {
                 }
             })
             const data = await response.data;
-            console.log(data)
             setLastActivityEntry(data)
         } catch (err) {
             console.error('Error getting last activity entry:', err);
@@ -154,7 +157,7 @@ function Home() {
                                 <div className='flex gap-4 w-fit items-center py-3 justify-between'>
                                     <div className='text-5xl'>🎉</div>
                                     <div className='flex flex-col items-center'>
-                                        <div className='text-sm text-left'>You've written an entry today!</div>
+                                        <div className='text-sm text-left'>You already wrote an entry today!</div>
                                     </div>
                                 </div>
                             </div>
@@ -182,7 +185,7 @@ function Home() {
                                     <div className='absolute text-md font-bold z-50 select-none pointer-events-none right-2'>#{lastActivityEntry.postNumber}</div>
                                     <div className='absolute top-3'
                                         dangerouslySetInnerHTML={{
-                                            __html: generateHTML(JSON.parse(lastActivityEntry.content), [StarterKit, TextStyleKit])
+                                            __html: generateHTML(JSON.parse(lastActivityEntry.content), [StarterKit, TextStyleKit, Image, TextAlign])
                                         }}>
                                     </div>
                                     <div className='absolute inset-0 rounded-xl bg-linear-to-b from-1% from-transparent via-[var(--tomoi-white)] via-40% to-[var(--tomoi-white)] to-70% z-10'></div>
