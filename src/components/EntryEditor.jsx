@@ -1,4 +1,4 @@
-import {useRef, useState, useEffect} from 'react'
+import {useRef, useState, useEffect, useMemo} from 'react'
 import Modal from './Modal';
 import { useAuth } from './AuthProvider'
 import { useEditor, EditorContent, EditorContext, useEditorState } from '@tiptap/react'
@@ -9,7 +9,6 @@ import { TextStyleKit, Color } from '@tiptap/extension-text-style'
 import { toast} from 'react-hot-toast'
 import StarterKit from '@tiptap/starter-kit'
 import Image from "@tiptap/extension-image";
-import { useMemo } from 'react'
 import './EditorText.css'
 import { Arrow90degLeft, Arrow90degRight, BlockquoteLeft, CardImage, CaretUpFill, CodeSlash, EmojiNeutralFill, Eyedropper, Justify, ListOl, ListUl, TagFill, TextCenter, TextLeft, TextRight, TypeBold, TypeItalic, TypeStrikethrough, TypeUnderline, } from 'react-bootstrap-icons';
 import { Popover, Chip, Autocomplete, TextField} from '@mui/material';
@@ -47,24 +46,25 @@ function EntryEditor({isOpen, onClose, mode}) {
     const highlight_color_popover_open = Boolean(highlightColorPickerAnchor);
     const highlight_color_popover_id = highlight_color_popover_open ? 'color-highlight-popover' : undefined;
 
+    const extensions = useMemo(() => [
+        StarterKit, 
+        TextStyleKit,
+        Image.configure({
+            resize: {
+                enabled: true,
+                directions: ['top', 'bottom', 'left', 'right']
+            }
+        }),
+        TextAlign.configure({
+            types: ['heading', 'paragraph'],
+        }),
+        Placeholder.configure({
+            placeholder: 'Loading content',
+        })
+    ], []);
+
     const editor = useEditor({
-        extensions: [
-            StarterKit, 
-            TextStyleKit,
-            Dropcursor,
-            Image.configure({
-                resize: {
-                    enabled: true,
-                    alwaysPreserveAspectRatio: true
-                }
-            }),
-            TextAlign.configure({
-                types: ['heading', 'paragraph'],
-            }),
-            Placeholder.configure({
-                placeholder: 'Write something ...',
-            })
-        ],
+        extensions: extensions,
         content: '',
         immediatelyRender: false,
         autofocus: true,

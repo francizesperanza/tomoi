@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import TomoiCalendar from './components/TomoiCalendar';
@@ -138,23 +138,25 @@ function Journal() {
         return text.length > limit ? text.substring(0, limit) + '...' : text;
     }
 
+    const extensions = useMemo(() => [
+        StarterKit, 
+        TextStyleKit,
+        Image.configure({
+            resize: {
+                enabled: true,
+                directions: ['top', 'bottom', 'left', 'right']
+            }
+        }),
+        TextAlign.configure({
+            types: ['heading', 'paragraph'],
+        }),
+        Placeholder.configure({
+            placeholder: 'Loading content',
+        })
+    ], []);
+
     const editor = useEditor({
-        extensions: [
-            StarterKit, 
-            TextStyleKit,
-            Image.configure({
-                resize: {
-                    enabled: true,
-                    directions: ['top', 'bottom', 'left', 'right']
-                }
-            }),
-            TextAlign.configure({
-                types: ['heading', 'paragraph'],
-            }),
-            Placeholder.configure({
-                placeholder: 'Loading content',
-            })
-        ],
+        extensions: extensions,
         content: '<p>empty</p>',
         immediatelyRender: true,
         autofocus: true,
@@ -170,18 +172,17 @@ function Journal() {
     })
 
     useEffect(() => {
-        if (!editor) return;
-
+        if (!editor || editor.isDestroyed) return;
         if (selectedEntry != undefined){
             try {
-                editor.commands.setContent(JSON.parse(selectedEntry.content))
+                editor?.commands.setContent(JSON.parse(selectedEntry.content))
                 setHasEntry(true)
             } catch (err) {
-                editor.commands.setContent("empty")
+                editor?.commands.setContent("empty")
                 setHasEntry(false)
             }
         } else {
-            editor.commands.setContent("empty")
+            editor?.commands.setContent("empty")
             setHasEntry(false)
         }
     }, [selectedEntry, editor])
