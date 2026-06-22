@@ -23,7 +23,6 @@ function EntryProvider ({children}) {
     const [loading, setLoading] = useState(false);
     const [view, setView] = useState('calendar');
     const [currentPage, setCurrentPage] = useState(1);
-    const [totalEntries, setTotalEntries] = useState(0);
     const [filterOption, setFilterOption] = useState('none')
     const [sortOption, setSortOption] = useState('newest')
     const entriesPerPage = 12;
@@ -33,6 +32,8 @@ function EntryProvider ({children}) {
         queryFn: () => getEntrySet( user, view, selectedDate, currentPage, entriesPerPage, sortOption, filterOption),
         enabled: !!user
     })
+
+    const totalEntries = entrySet[0]?.total ?? 0
 
     const getEntrySet = async (user, view, selectedDate, currentPage, entriesPerPage, sortOption, filterOption) => {
         if (!user)
@@ -129,7 +130,6 @@ function EntryProvider ({children}) {
             setView,
             currentPage,
             setCurrentPage,
-            setTotalEntries,
             totalEntries,
             entriesPerPage,
             filterOption,
