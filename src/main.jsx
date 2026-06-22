@@ -13,6 +13,7 @@ import NotAvailable from './NotAvailable.jsx'
 import Journal from './Journal.jsx'
 import EntryProvider from './components/EntryProvider.jsx'
 import {useAuth} from './components/AuthProvider.jsx'
+import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
 
 import axios from 'axios';
 
@@ -61,6 +62,7 @@ createRoot(document.getElementById('root')).render(
           </Routes>
         </Router>
       </AuthProvider>
+      <ReactQueryDevtools initialIsOpen={false} />
     </QueryClientProvider>
     
     <Toaster />

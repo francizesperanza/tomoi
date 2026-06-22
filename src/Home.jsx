@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useQuery } from '@tanstack/react-query'
 import { EmojiFrown, ExclamationTriangle, Google, Pencil, Star, StarFill } from 'react-bootstrap-icons';
 import { Link, useNavigate } from 'react-router-dom';
 import { toast} from 'react-hot-toast';
@@ -55,8 +56,6 @@ function Home() {
   const navigate = useNavigate();
   const {entrySet, setSelectedDate, setLoading, loading, setView} = useEntry();
   const {user} = useAuth();
-  const [latestEntry, setLatestEntry] = useState({});
-  const [lastActivityEntry, setLastActivityEntry] = useState(null);
   const [dailyEntryCountdown, setDailyEntryCountdown] = useState(calculateCountdown());
   const sampleText = "Want on this when she what would you. In how them or these, well two two there than give, by it about any up most want his who at. Us now do at, that these have as over I one, know some with our he no, person by not any do over give, my when in want, or an now into you with by want he get I do but not, at good, us this say my, most some use come she up if and, your him as now, good use no how us say, good like, now, do there"
   
@@ -72,6 +71,63 @@ function Home() {
     navigate('/journal')
   }
 
+  const { data: latestEntry = {}, isLoadingLatestEntry, latestEntryError } = useQuery ({
+    queryKey: ["latest-entry", user?.userID],
+    queryFn: () => getLatestEntry(user),
+    enabled: !!user
+  })
+
+  const { data: lastActivityEntry = {}, isLoadingLastActivityEntry, lastActivityEntryError } = useQuery ({
+    queryKey: ["last-activity-entry", user?.userID],
+    queryFn: () => getLastActivityEntry(user),
+    enabled: !!user
+  })
+
+  const getLatestEntry = async(user) => {
+
+    if (!user)
+        return {}
+
+    try {
+        const userID = user.userID
+
+        const API_URL = import.meta.env.VITE_API_URL
+        const response = await axios.get(`${API_URL}/get-latest-entry`, {
+            params: {
+                userID
+            }
+        })
+        return response.data
+    } catch (err) {
+        console.error('Error getting latest entry:', err);
+    }
+
+    return {}
+}
+
+const getLastActivityEntry = async(user) => {
+
+    if (!user)
+        return {}
+
+    try {
+        const userID = user.userID
+
+        const API_URL = import.meta.env.VITE_API_URL
+        const response = await axios.get(`${API_URL}/get-last-edited-entry`, {
+            params: {
+                userID
+            }
+        })
+        console.log(response.data)
+        return response.data;
+    } catch (err) {
+        console.error('Error getting last activity entry:', err);
+    }
+
+    return {}
+}
+
   useEffect (() => {
     const timer = setInterval (() => {
         setDailyEntryCountdown(calculateCountdown());
@@ -81,45 +137,7 @@ function Home() {
   })
 
   useEffect (() => {
-    const getLatestEntry = async() => {
-        try {
-            setLoading(true)
-            const userID = user.userID
-
-            const API_URL = import.meta.env.VITE_API_URL
-            const response = await axios.get(`${API_URL}/get-latest-entry`, {
-                params: {
-                    userID
-                }
-            })
-            const data = await response.data;
-            setLatestEntry(data)
-        } catch (err) {
-            console.error('Error getting latest entry:', err);
-        } finally {
-            setLoading(false)
-        }
-    }
-
-    const getLastActivityEntry = async() => {
-        try {
-            setLoading(true)
-            const userID = user.userID
-
-            const API_URL = import.meta.env.VITE_API_URL
-            const response = await axios.get(`${API_URL}/get-last-edited-entry`, {
-                params: {
-                    userID
-                }
-            })
-            const data = await response.data;
-            setLastActivityEntry(data)
-        } catch (err) {
-            console.error('Error getting last activity entry:', err);
-        } finally {
-            setLoading(false)
-        }
-    }
+    
 
     getLatestEntry()
     getLastActivityEntry()
@@ -136,7 +154,7 @@ function Home() {
                         <TomoiCalendar></TomoiCalendar>
 
                         {
-                            !dayjs(latestEntry.dateCreated).isToday() ?
+                            !dayjs(latestEntry.dateCreated).isToday() || !latestEntry ?
                             <div className='flex bg-white rounded-xl items-center justify-center grow-2 gap-3 max-h-[15%] outline-[var(--tomoi-gray-d)] outline-dashed outline-2'>
                                 <div className='flex gap-4 px-5 w-[80%] items-center justify-center'>
                                     <ExclamationTriangle width={40} height={40} className='fill-[var(--tomoi-yellow)]'></ExclamationTriangle>
@@ -181,7 +199,7 @@ function Home() {
                                 </div>
                             }
                             {
-                                lastActivityEntry &&
+                                lastActivityEntry?.content &&
                                 <div onClick={() => {goToLatestActivityEntry(lastActivityEntry.dateCreated)}} className='relative overflow-hidden bg-[var(--tomoi-white)] p-4 rounded-xl shadow-md/20 hover:shadow-md/40 flex flex-col items-start grow-1 justify-end group'>
                                     <div className='absolute text-md font-bold z-50 select-none pointer-events-none right-2'>#{lastActivityEntry.postNumber}</div>
                                     <div className='absolute top-3'

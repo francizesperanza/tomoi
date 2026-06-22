@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect, useOptimistic } from "react";
 import dayjs, {Dayjs} from 'dayjs';
 import { useAuth } from './AuthProvider'
+import { useQuery } from '@tanstack/react-query';
 
 import isLeapYear from "dayjs/plugin/isLeapYear";
 import localeData from "dayjs/plugin/localeData";
@@ -19,7 +20,6 @@ function EntryProvider ({children}) {
     const {user} = useAuth();
     const [selectedDate, setSelectedDate] = useState(dayjs(Date.now()));
     const [selectedEntry, setSelectedEntry] = useState("");
-    const [entrySet, setEntrySet] = useState([]);
     const [loading, setLoading] = useState(false);
     const [view, setView] = useState('calendar');
     const [currentPage, setCurrentPage] = useState(1);
@@ -28,60 +28,25 @@ function EntryProvider ({children}) {
     const [sortOption, setSortOption] = useState('newest')
     const entriesPerPage = 12;
 
-    // const getSelectedDateEntry2 = async () => {
-    //     const startDate = selectedDate.startOf('day').format('YYYY-MM-DD');
-    //     const endDate = selectedDate.add(1, 'day').startOf('day').format('YYYY-MM-DD');
-    //     const userID = user.userID
-        
-    //     setLoading(true)
+    const { data: entrySet = [], isLoading, error } = useQuery ({
+        queryKey: ["entries", user?.userID, view, currentPage, entriesPerPage, sortOption, filterOption, selectedDate?.format("YYYY-MM")],
+        queryFn: () => getEntrySet( user, view, selectedDate, currentPage, entriesPerPage, sortOption, filterOption),
+        enabled: !!user
+    })
 
-    //     try {
-    //         const API_URL = import.meta.env.VITE_API_URL
-    //         const response = await axios.get(`${API_URL}/get-selected-date-entry`, {
-    //             params: {
-    //                 userID,
-    //                 startDate,
-    //                 endDate
-    //             }
-    //         })
-    //         const data = await response.data;
-    //         setSelectedEntry(data)
-    //         console.log(data)
-    //     } catch (err) {
-    //         if (err.response?.status === 401) {
-    //             setSelectedEntry(null);
-    //         } else {
-    //             alert('Error fetching selected date entry');
-    //         }
-    //     } finally {
-    //         setLoading(false);
-    //     }
-    // }
-
-    // const getSelectedDateEntry = () => {
-    //     const startDate = selectedDate.startOf('day').format('YYYY-MM-DD');
-    //     const endDate = selectedDate.add(1, 'day').startOf('day').format('YYYY-MM-DD');
-    //     const userID = user.userID
-        
-    //     const entry = entrySet.find(entry => entry.dateCreated.split('T')[0] === startDate)
-
-    //     setSelectedEntry(entry ?? null)
-    // }
-
-    const getEntrySet = async () => {
+    const getEntrySet = async (user, view, selectedDate, currentPage, entriesPerPage, sortOption, filterOption) => {
         if (!user)
-            return
-        
-        setEntrySet([])
-        const startDate = selectedDate.startOf('month').format('YYYY-MM-DD');
-        const endDate = selectedDate.add(1, 'month').startOf('month').format('YYYY-MM-DD');
+            return [];
+
         const userID = user.userID
-        
-        setLoading(true)
         try {
             const API_URL = import.meta.env.VITE_API_URL
+            
             let response
             if (view === 'calendar'){
+            const startDate = selectedDate.startOf('month').format('YYYY-MM-DD');
+            const endDate = selectedDate.add(1, 'month').startOf('month').format('YYYY-MM-DD');
+        
                 response = await axios.get(`${API_URL}/get-current-month-entries`, {
                     params: {
                         userID,
@@ -111,11 +76,7 @@ function EntryProvider ({children}) {
                 })
             }
             
-            const data = await response.data;
-            setEntrySet(data)
-            if (data[0]?.total !== undefined) {
-                setTotalEntries(data[0].total)
-            }
+            return response.data;
         } catch (err) {
             if (err.response?.status === 401) {
                 setSelectedEntry(null);
@@ -125,6 +86,8 @@ function EntryProvider ({children}) {
         } finally {
             setLoading(false);
         }
+
+        return []
     }
 
     const refreshEntries = async () => {
@@ -157,7 +120,6 @@ function EntryProvider ({children}) {
             selectedDate, 
             setSelectedDate,
             entrySet,
-            setEntrySet,
             selectedEntry, 
             setSelectedEntry,
             refreshEntries,
