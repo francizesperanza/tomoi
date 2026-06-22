@@ -172,7 +172,8 @@ function Home() {
                     </div>
                     <div className='flex flex-col w-[35%] gap-2'>
                         <div className='flex flex-col h-[50%] gap-1'>
-                            <div className='text-3xl ml-1 underline font-bold'>Last activity</div>
+                            <div data-text="Last activity" className='stroked-left font-bold text-3xl'
+                            style={{"--inside-color": 'black'}}>Last activity</div>
                             {
                                 loading &&
                                 <div className='relative overflow-hidden bg-[var(--tomoi-white)] p-4 rounded-xl shadow-md/20 hover:shadow-md/40 flex flex-col items-center grow-1 justify-center group'>

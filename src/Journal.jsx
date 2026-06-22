@@ -172,6 +172,10 @@ function Journal() {
     })
 
     useEffect(() => {
+        window.scrollTo(0,0)
+    }, [])
+
+    useEffect(() => {
         if (!editor || editor.isDestroyed) return;
         if (selectedEntry != undefined){
             try {
