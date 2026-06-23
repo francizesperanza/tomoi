@@ -336,16 +336,16 @@ function Journal() {
                         </div>
                         {
                             (view === 'all' || view === 'favorites') &&
-                            <div className='flex gap-2 items-center items-stretch justify-end px-4 w-full'>
+                            <div className='flex gap-4 items-center items-stretch justify-end px-4 w-full'>
                                 <div className='flex justify-center items-center gap-2 text-sm'>
                                     <Filter className='size-[1.5em]'></Filter>
-                                    <div onClick={(e) => openFilterPopover(e)} className='select-none items-center h-full flex justify-between bg-[var(--tomoi-white)] w-[10vw] leading-none px-3 rounded-xl text-sm'>{filterOption === 'none' ? filterOptionsMap[filterOption].optionName : filterOptionsMap[filterOption.split('-')[0]].subOptions[filterOption]}
+                                    <div onClick={(e) => openFilterPopover(e)} className='hover:border-1 border-dashed select-none items-center h-full flex justify-between bg-[var(--tomoi-white)] w-[10vw] leading-none px-3 rounded-xl text-sm'>{filterOption === 'none' ? filterOptionsMap[filterOption].optionName : filterOptionsMap[filterOption.split('-')[0]].subOptions[filterOption]}
                                         <CaretDownFill className='text-[var(--tomoi-gray-d)]'></CaretDownFill>
                                     </div>
                                 </div>
                                 <div className='flex justify-center items-center gap-2 text-sm'>
                                     <SortDown className='size-[1.5em]'></SortDown>
-                                    <div onClick={(e) => openSortPopover(e)} className='select-none items-center h-full flex justify-between bg-[var(--tomoi-white)] w-[10vw] leading-none px-3 rounded-xl text-sm'>{sortOptionsMap[sortOption]}
+                                    <div onClick={(e) => openSortPopover(e)} className='hover:border-1 border-dashed select-none items-center h-full flex justify-between bg-[var(--tomoi-white)] w-[10vw] leading-none px-3 rounded-xl text-sm'>{sortOptionsMap[sortOption]}
                                         <CaretDownFill className='text-[var(--tomoi-gray-d)]'></CaretDownFill>
                                     </div>
                                 </div>

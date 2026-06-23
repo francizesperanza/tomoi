@@ -7,6 +7,7 @@ import './index.css'
 import Login from './Login.jsx'
 import SignUp from './SignUp.jsx'
 import Home from './Home.jsx'
+import Stats from './Stats.jsx'
 import PrivateRoute from './components/PrivateRoute.jsx'
 import AuthProvider from './components/AuthProvider.jsx'
 import NotAvailable from './NotAvailable.jsx'
@@ -55,7 +56,7 @@ createRoot(document.getElementById('root')).render(
             </Route>
             <Route path="/habits" element={<NotAvailable/>} />
             <Route path="/slambook" element={<NotAvailable/>} />
-            <Route path="/stats" element={<NotAvailable/>} />
+            <Route path="/stats" element={<Stats/>} />
 
             
             <Route path="*" element={<DefaultRedirect />} />
