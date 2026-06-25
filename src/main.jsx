@@ -52,11 +52,14 @@ createRoot(document.getElementById('root')).render(
                 <PrivateRoute>
                   <Journal/>
                 </PrivateRoute >} />
+              <Route path="/stats" element={
+                <PrivateRoute>
+                  <Stats/>
+                </PrivateRoute>} />
 
             </Route>
             <Route path="/habits" element={<NotAvailable/>} />
             <Route path="/slambook" element={<NotAvailable/>} />
-            <Route path="/stats" element={<Stats/>} />
 
             
             <Route path="*" element={<DefaultRedirect />} />
