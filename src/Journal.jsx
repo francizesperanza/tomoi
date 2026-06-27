@@ -18,6 +18,7 @@ import LoadingComponent from './components/LoadingComponent';
 import axios from "axios";
 import dayjs, {Dayjs} from 'dayjs';
 import { toast} from 'react-hot-toast'
+import { useQueryClient } from '@tanstack/react-query';
 
 
 import isLeapYear from "dayjs/plugin/isLeapYear";
@@ -41,6 +42,7 @@ function Journal() {
     const [mode, setMode] = useState("new");
     const [sortAnchorEl, setSortAnchorEl] = useState(null);
     const [filterAnchorEl, setFilterAnchorEl] = useState(null);
+    const queryClient = useQueryClient();
     let allViewSelectedDate;
 
     const root = useRef(null);
@@ -296,6 +298,10 @@ function Journal() {
             })
             const data = await response.data;
             toast.success(data.message);
+
+            queryClient.invalidateQueries({queryKey: ['entries']})
+            queryClient.invalidateQueries({queryKey: ['streakStats']})
+
             await refreshEntries();
         } catch (err) {
             console.error('Error deleting entry:', err);

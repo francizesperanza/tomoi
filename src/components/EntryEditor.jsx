@@ -17,7 +17,11 @@ import { useEntry } from './EntryProvider';
 import { useUploadThing } from '../utils/uploadthing';
 import axios from 'axios'
 import LoadingComponent from './LoadingComponent';
+import isToday from 'dayjs/plugin/isToday';
+import { useQueryClient } from '@tanstack/react-query';
+import useStreaks from './useStreaks'
 
+dayjs.extend(isToday);
 
 function EntryEditor({isOpen, onClose, mode}) {
     const {user} = useAuth();
@@ -32,10 +36,10 @@ function EntryEditor({isOpen, onClose, mode}) {
     const [title, setTitle] = useState('');
     const [loading, setLoading] = useState(false);
     const { startUpload } = useUploadThing("imageUploader");
+    const { data: streakStats = null } = useStreaks(user.userID, dayjs().format('YYYY-MM-DD'));
     const fileUploadRef = useRef(null)
-
     const lastEditedDate = mode === 'new' ? dayjs(new Date()).format('MMMM DD, YYYY hh:mm A') : dayjs(selectedEntry?.lastEdited).format('MMMM DD, YYYY hh:mm A')
-  
+    const queryClient = useQueryClient();
 
     const handleFeelingChange = (event) => {
         setFeeling(event.target.value);
@@ -206,6 +210,31 @@ function EntryEditor({isOpen, onClose, mode}) {
         setHighlightColorPickerAnchor(null);
     }
 
+    const handleStreaks = async (writtenOnTime, author) => {
+        const bs = streakStats?.bestStreak
+        const cs = streakStats?.currentStreak
+
+        if (writtenOnTime) {
+            if ((cs + 1) > bs) {
+                const API_URL = import.meta.env.VITE_API_URL
+                    const response = await axios.put(`${API_URL}/update-best-streak`, {
+                        userID: author,
+                        bestStreak: cs + 1
+                    })
+                toast.success("New best writing streak!")
+            }
+            toast.success((cs + 1) + "-day streak")
+        }
+        queryClient.setQueryData(['streakStats', author], (oldData) => {
+            if (!oldData) return oldData;
+            return {
+                bestStreak: !writtenOnTime ? oldData.bestStreak : Math.max(oldData.bestStreak, oldData.currentStreak + 1),
+                currentStreak: !writtenOnTime ? oldData.currentStreak : oldData.currentStreak + 1
+            };
+        })
+
+    }
+
     const handleSave = async (e) => {
         e.preventDefault()
 
@@ -214,6 +243,7 @@ function EntryEditor({isOpen, onClose, mode}) {
         const author = user.userID
         const content =  JSON.stringify(editorContent)
         const contentText = editor.getText()
+        const writtenOnTime = dayjs(selectedDate).isToday();
 
         if (title.length === 0) {
             toast.error('Please enter a title for your entry!');
@@ -234,10 +264,15 @@ function EntryEditor({isOpen, onClose, mode}) {
                         feeling,
                         dateCreated,
                         lastEdited,
-                        tags
+                        tags,
+                        writtenOnTime
                     })
                     const data = await response.data;
+                    handleStreaks(writtenOnTime, author);
+
                     toast.success(data.message);
+                    queryClient.invalidateQueries({queryKey: ['streakStats']})
+                    queryClient.invalidateQueries({queryKey: ['entries']})
                     await refreshEntries();
                 } catch (err) {
                     console.error('Error creating entry:', err);

@@ -326,12 +326,12 @@ app.get('/search', (req, res) => {
 // ENTRY ENDPOINTS
 
 app.post('/create-entry', (req, res) => {
-    const { title, author, content, contentText, feeling, dateCreated, lastEdited, tags} = req.body;
+    const { title, author, content, contentText, feeling, dateCreated, lastEdited, tags, writtenOnTime} = req.body;
     const uuid = createBinaryUUID();
     const contentUuid = createBinaryUUID();
     // creating entry
-    const query = 'INSERT INTO posts (postID, author, title, contentID, feeling, dateCreated, lastEdited, isFavorite) VALUES (?, ?, ?, ?, ?, ?, ?, ?)';
-    db.query(query, [uuid.buffer, toBinaryUUID(author), title, contentUuid.buffer, feeling, dateCreated, lastEdited, false], (err, result) => {
+    const query = 'INSERT INTO posts (postID, author, title, contentID, feeling, dateCreated, lastEdited, isFavorite, writtenOnTime) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)';
+    db.query(query, [uuid.buffer, toBinaryUUID(author), title, contentUuid.buffer, feeling, dateCreated, lastEdited, false, writtenOnTime], (err, result) => {
         if (err) {
             if (err.code === 'ER_DUP_ENTRY') {
                 return res.status(400).json({ error: 'Post already exists' });
@@ -462,6 +462,19 @@ app.put('/edit-entry', (req, res) => {
             })
         })
         
+    });
+})
+
+app.put('/update-best-streak', (req, res) => {
+    const {userID, bestStreak} = req.body;
+
+    // editing entry
+    const query = 'UPDATE users SET bestStreak = ? WHERE userID = ?';
+    db.query(query, [bestStreak, toBinaryUUID(userID)], (err, result) => {
+        if (err) {
+            console.error('Error updating best streak:', err);
+            return res.status(500).json({ error: 'Error updating best streak' });
+        }
     });
 })
 
@@ -800,6 +813,116 @@ app.put('/update-favorite', (req, res) => {
         }
 
         res.status(200).json(result);
+    });
+});
+
+// STATS API
+
+app.get('/get-total-entry-count', (req, res) => {
+    const { userID } = req.query;
+    const query = `SELECT COUNT(p.postID) as total FROM posts p WHERE p.author = ?;`
+    db.query(query, [toBinaryUUID(userID)], (err, result) => {
+        if (err) {
+            console.error('Error fetching total entry count', err);
+            res.status(500).json({ error: 'Error fetching total entry count' });
+        } else {
+            res.json(result[0].total);
+        }
+    });
+});
+
+app.get('/get-journaling-duration', (req, res) => {
+    const { userID } = req.query;
+    const query = `SELECT DATEDIFF(NOW(), MIN(dateCreated)) AS duration_days FROM posts WHERE author = ?;`
+    db.query(query, [toBinaryUUID(userID)], (err, result) => {
+        if (err) {
+            console.error('Error fetching journaling duration', err);
+            res.status(500).json({ error: 'Error fetching journaling duration' });
+        } else {
+            res.json(result[0].duration_days);
+        }
+    });
+});
+
+app.get('/get-word-stats', (req, res) => {
+    const { userID } = req.query;
+    const query = `WITH word_counts AS (
+                    SELECT
+                        CASE
+                            WHEN TRIM(REGEXP_REPLACE(c.contentText, '[[:space:]]+', ' ')) = ''
+                            THEN 0
+                            ELSE
+                                LENGTH(TRIM(REGEXP_REPLACE(c.contentText, '[[:space:]]+', ' ')))
+                                - LENGTH(REPLACE(TRIM(REGEXP_REPLACE(c.contentText, '[[:space:]]+', ' ')), ' ', ''))
+                                + 1
+                        END AS word_count
+                        FROM contents c
+                        JOIN posts p ON c.contentID = p.contentID
+                        WHERE p.author = ?
+                    )
+                    SELECT
+                        SUM(word_count) AS total_words,
+                        AVG(word_count) AS avg_words,
+                        MAX(word_count) AS longest_entry
+                    FROM word_counts
+                    ORDER BY word_count DESC;`
+    db.query(query, [toBinaryUUID(userID)], (err, result) => {
+        if (err) {
+            console.error('Error fetching word stats', err);
+            res.status(500).json({ error: 'Error fetching word stats' });
+        } else {
+            res.json(result[0]);
+        }
+    });
+});
+
+app.get('/get-streak-stats', (req, res) => {
+    const { userDate, userID } = req.query;
+    const query = `
+    
+    WITH postDates AS (
+        SELECT DISTINCT DATE(dateCreated) AS post_date
+        FROM posts
+        WHERE author = ? AND writtenOnTime = 1
+    ),
+    dateGroups AS (
+        SELECT
+            post_date,
+            post_date - INTERVAL ROW_NUMBER() OVER (ORDER BY post_date) DAY AS island_id
+            FROM postDates
+    ),
+    streaks AS (
+        SELECT
+            island_id,
+            COUNT(*) AS streak_length,
+            MAX(post_date) AS last_post_date
+        FROM dateGroups
+        GROUP BY island_id
+    ),
+    currentStreakCalc AS (
+        SELECT
+            CASE
+                WHEN MAX(last_post_date) >= DATE(?) - INTERVAL 1 DAY
+                THEN (SELECT streak_length FROM streaks ORDER BY last_post_date DESC LIMIT 1)
+                ELSE 0
+            END AS current_streak
+        FROM streaks
+    )
+    
+    SELECT
+        u.bestStreak,
+        COALESCE(c.current_streak, 0) AS currentStreak
+    FROM users u
+    LEFT JOIN currentStreakCalc c ON 1=1
+    WHERE u.userID = ?;`
+    
+    db.query(query, [toBinaryUUID(userID), userDate, toBinaryUUID(userID)], (err, result) => {
+        if (err) {
+            console.error('Error fetching streak stats', err);
+            res.status(500).json({ error: 'Error fetching streak stats' });
+        } else {
+            res.json(result[0]);
+        }
     });
 });
 

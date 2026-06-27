@@ -3,6 +3,10 @@ import { useAuth } from './components/AuthProvider';
 import Navbar from './components/Navbar';
 import { Alphabet, CaretDownFill, EmojiFrownFill, EmojiSmile, EmojiSmileFill, Fire, Tag, TagFill } from 'react-bootstrap-icons';
 import { Popover } from '@mui/material';
+import { useQuery } from '@tanstack/react-query';
+import axios from "axios";
+import dayjs from 'dayjs';
+import { useStreaks } from './components/useStreaks'
 
 import JournalIcon from './assets/journal_menu_btn.svg?react';
 
@@ -31,7 +35,101 @@ function Stats() {
     
     const openFilterOptions = Boolean(filterAnchorEl);
     const filterPopoverId = openFilterOptions ? 'filter-options-popover' : undefined;
+    const { data: streakStats = null } = useStreaks(user.userID, dayjs().format('YYYY-MM-DD'));
+    const { data: totalEntries = 0 } = useQuery({
+        queryKey:['totalEntries', user.userID],
+        queryFn: () => getTotalEntries(user),
+        enabled: !!user
+    })
 
+    const { data: journalingDuration = 0 } = useQuery({
+        queryKey:['journalingDuration', user.userID],
+        queryFn: () => getJournalingDuration(user),
+        enabled: !!user
+    })
+
+    const { data: wordStats = null } = useQuery({
+        queryKey:['wordStats', user.userID],
+        queryFn: () => getWordStats(user),
+        enabled: !!user
+    })
+
+    const averageEntryPerDay = (totalEntries / journalingDuration).toFixed(2)
+    const averageWordsPerEntry = Number(wordStats?.avg_words).toFixed(2)
+
+    const getTotalEntries = async (user) => {
+        if (!user)
+            return [];
+
+        const userID = user.userID
+
+        try {
+            const API_URL = import.meta.env.VITE_API_URL
+        
+            const response = await axios.get(`${API_URL}/get-total-entry-count`, {
+                params: {
+                    userID
+                }
+            })
+            return response.data;
+
+        } catch (err) {
+            console.log(err)
+        }
+
+        return []
+    }
+
+    const getJournalingDuration = async (user) => {
+        if (!user)
+            return [];
+
+        const userID = user.userID
+
+        try {
+            const API_URL = import.meta.env.VITE_API_URL
+        
+            const response = await axios.get(`${API_URL}/get-journaling-duration`, {
+                params: {
+                    userID
+                }
+            })
+            return response.data;
+
+        } catch (err) {
+            console.log(err)
+        }
+
+        return []
+    }
+
+    const getWordStats = async (user) => {
+        if (!user)
+            return [];
+
+        const userID = user.userID
+
+        try {
+            const API_URL = import.meta.env.VITE_API_URL
+        
+            const response = await axios.get(`${API_URL}/get-word-stats`, {
+                params: {
+                    userID
+                }
+            })
+            return {
+                total_words: response.data.total_words,
+                avg_words: response.data.avg_words,
+                longest_entry: response.data.longest_entry
+            };
+
+        } catch (err) {
+            console.log(err)
+        }
+
+        return []
+    }
+    
     const openFilterPopover = (e) => {
         setFilterAnchorEl(e.currentTarget);
     }
@@ -60,11 +158,11 @@ function Stats() {
                             <div className='grid grid-cols-2 rows-2 gap-2 w-full'>
                                 <div className='relative bg-[var(--tomoi-white)] shadow-sm/30 overflow-hidden rounded-xl p-6 flex gap-3 items-center'>
                                     <div className='flex flex-col leading-none grow'>
-                                        <div className='text-4xl font-bold leading-none'>600</div>
+                                        <div className='text-4xl font-bold leading-none'>{totalEntries}</div>
                                         <div className='text-lg leading-none'>Total entries</div>
                                     </div>
                                     <div className='flex flex-col leading-none grow z-10'>
-                                        <div className='text-4xl font-bold leading-none'>0.83</div>
+                                        <div className='text-4xl font-bold leading-none'>{averageEntryPerDay}</div>
                                         <div className='text-lg leading-none'>Entries per day</div>
                                     </div>
                                     <JournalIcon className="rotate-15 absolute w-[8em] z-1 right-1 mt-20 fill-[var(--tomoi-gray)]" />
@@ -77,23 +175,27 @@ function Stats() {
 
                                 <div className='relative bg-[var(--tomoi-gray)] overflow-hidden shadow-sm/30 rounded-xl p-6 flex gap-3 items-center'>
                                     <div className='flex z-10 flex-col items-end leading-none grow'>
-                                        <div className='text-4xl text font-bold leading-none'>4,000,000</div>
+                                        <div className='text-4xl text font-bold leading-none'>{wordStats?.total_words}</div>
                                         <div className='text-lg leading-none'>Total words</div>
                                     </div>
                                     <div className='flex flex-col items-end leading-none grow'>
-                                        <div className='text-4xl font-bold leading-none'>5,999 words</div>
+                                        <div className='text-4xl font-bold leading-none'>{averageWordsPerEntry}</div>
+                                        <div className='text-lg leading-none text-right'>Words per entry</div>
+                                    </div>
+                                    <div className='flex flex-col items-end leading-none grow'>
+                                        <div className='text-4xl font-bold leading-none'>{wordStats?.longest_entry}</div>
                                         <div className='text-lg leading-none'>Longest entry</div>
                                     </div>
-                                    <Alphabet className="z-1 absolute w-[10em] h-[10em] font-bold left-1 leading-none top-0 fill-[var(--tomoi-gray-d)]"/>
+                                    <Alphabet className="z-1 opacity-30 absolute w-[10em] h-[10em] font-bold left-1 leading-none top-0 fill-[var(--tomoi-gray-d)]"/>
                                 </div>
 
                                 <div className='relative bg-[var(--tomoi-white)] overflow-hidden shadow-sm/30 rounded-xl p-6 flex gap-3 items-center'>
                                     <div className='flex flex-col leading-none grow z-10'>
-                                        <div className='text-4xl font-bold leading-none'>7 days</div>
-                                        <div className='text-lg leading-none'>Current writing streak</div>
+                                        <div className='text-4xl font-bold leading-none'>{streakStats?.bestStreak} days</div>
+                                        <div className='text-lg leading-none'>Best writing streak</div>
                                     </div>
                                     <div className='flex flex-col leading-none grow z-10'>
-                                        <div className='text-4xl font-bold leading-none'>3 days</div>
+                                        <div className='text-4xl font-bold leading-none'>{streakStats?.currentStreak} days</div>
                                         <div className='text-lg leading-none'>Current writing streak</div>
                                     </div>
                                     <Fire className="z-1 rotate-15 absolute w-[8em] h-[8em] right-1 top-0 fill-[var(--tomoi-orange-l)]" />
