@@ -926,6 +926,50 @@ app.get('/get-streak-stats', (req, res) => {
     });
 });
 
+app.get('/get-entry-chart-data', (req, res) => {
+    const { userDate, userID } = req.query;
+    const query = `
+    
+    WITH RECURSIVE months AS (
+        SELECT DATE_FORMAT(?, '%Y-%m-01') AS month_start
+        UNION ALL
+        SELECT DATE_SUB(month_start, INTERVAL 1 MONTH)
+        FROM months
+        WHERE month_start > DATE_FORMAT(DATE_SUB(?, INTERVAL 5 MONTH), '%Y-%m-01')
+    )
+
+    SELECT
+        DATE_FORMAT(m.month_start, '%b %Y') AS month,
+
+        COUNT(CASE WHEN p.feeling = 'Angry' THEN 1 END) AS angry,
+        COUNT(CASE WHEN p.feeling = 'Excited' THEN 1 END) AS excited,
+        COUNT(CASE WHEN p.feeling = 'Happy' THEN 1 END) AS happy,
+        COUNT(CASE WHEN p.feeling = 'Peaceful' THEN 1 END) AS peaceful,
+        COUNT(CASE WHEN p.feeling = 'Reflective' THEN 1 END) AS reflective,
+        COUNT(CASE WHEN p.feeling = 'Sad' THEN 1 END) AS sad,
+        COUNT(CASE WHEN p.feeling = 'Anxious' THEN 1 END) AS anxious,
+        COUNT(CASE WHEN p.feeling = 'Lovestruck' THEN 1 END) AS lovestruck,
+        COUNT(CASE WHEN p.feeling = 'Neutral' THEN 1 END) AS neutral
+
+    FROM months m
+    LEFT JOIN posts p
+        ON DATE_FORMAT(p.dateCreated, '%Y-%m') =
+        DATE_FORMAT(m.month_start, '%Y-%m')
+    AND author = ?
+
+    GROUP BY m.month_start
+    ORDER BY m.month_start ASC;`
+    
+    db.query(query, [userDate, userDate, toBinaryUUID(userID)], (err, result) => {
+        if (err) {
+            console.error('Error fetching entry chart data', err);
+            res.status(500).json({ error: 'Error fetching entry chart data' });
+        } else {
+            res.json(result);
+        }
+    });
+});
+
 // TESTING ENDPOINT
 
 app.post('/seed-posts', seedPosts(db, createBinaryUUID, toBinaryUUID))

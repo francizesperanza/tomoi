@@ -215,15 +215,20 @@ function EntryEditor({isOpen, onClose, mode}) {
         const cs = streakStats?.currentStreak
 
         if (writtenOnTime) {
+            console.log(cs+1," > ", bs)
+            toast((cs + 1) + "-day streak", {
+                icon: '🔥'
+            })
             if ((cs + 1) > bs) {
+                toast("New best writing streak!", {
+                    icon: '🏆'
+                })
                 const API_URL = import.meta.env.VITE_API_URL
-                    const response = await axios.put(`${API_URL}/update-best-streak`, {
-                        userID: author,
-                        bestStreak: cs + 1
-                    })
-                toast.success("New best writing streak!")
+                const response = await axios.put(`${API_URL}/update-best-streak`, {
+                    userID: author,
+                    bestStreak: cs + 1
+                })
             }
-            toast.success((cs + 1) + "-day streak")
         }
         queryClient.setQueryData(['streakStats', author], (oldData) => {
             if (!oldData) return oldData;

@@ -7,6 +7,17 @@ import { useQuery } from '@tanstack/react-query';
 import axios from "axios";
 import dayjs from 'dayjs';
 import { useStreaks } from './components/useStreaks'
+import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend } from 'chart.js';
+import { Bar } from 'react-chartjs-2';
+
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend
+);
 
 import JournalIcon from './assets/journal_menu_btn.svg?react';
 
@@ -27,6 +38,18 @@ const feelingInterpretationMap = {
     'Reflective' : ["You must know yourself pretty well.", 'var(--tomoi-cyan-l)', 'var(--tomoi-cyan)'],
     'Neutral' : ["So you just don't feel anything about anything, huh.", 'var(--tomoi-gray-l)', 'var(--tomoi-gray)'],
 }
+
+const rootStyles = getComputedStyle(document.documentElement);
+const angryColor = rootStyles.getPropertyValue('--tomoi-red-l').trim();
+const excitedColor = rootStyles.getPropertyValue('--tomoi-orange-l').trim();
+const happyColor = rootStyles.getPropertyValue('--tomoi-yellow-l').trim();
+const peacefulColor = rootStyles.getPropertyValue('--tomoi-green-l').trim();
+const reflectiveColor = rootStyles.getPropertyValue('--tomoi-cyan-l').trim();
+const sadColor = rootStyles.getPropertyValue('--tomoi-blue-l').trim();
+const anxiousColor = rootStyles.getPropertyValue('--tomoi-violet-l').trim();
+const lovestruckColor = rootStyles.getPropertyValue('--tomoi-pink-l').trim();
+const neutralColor = rootStyles.getPropertyValue('--tomoi-gray-l').trim();
+
 
 function Stats() {
     const { user } = useAuth();
@@ -53,6 +76,80 @@ function Stats() {
         queryFn: () => getWordStats(user),
         enabled: !!user
     })
+
+    const { data: entryChartData = null } = useQuery({
+        queryKey:['entryChartData', user.userID],
+        queryFn: () => getEntryChartData(user),
+        enabled: !!user
+    })
+
+    const entryChartLabels = entryChartData?.map(({month}) => month);
+  
+    const entryChartOptions = {
+        plugins: {
+            title: {
+                display: true,
+                text: 'Entries from the Past 6 Months',
+                font: {
+                    family: 'Kulim Park',
+                    size: 24
+                }
+            },
+            legend: {
+                labels: {
+                    font: {
+                        size: 12,
+                        family: 'Kulim Park'
+                    },
+                    boxWidth: 15
+                }
+            },
+            tooltip: {
+                titleFont: {family: 'Kulim Park'},
+                bodyfont: {family: 'Kulim Park'}
+            }
+        },
+        responsive: true,
+        scales: {
+            x: {
+                ticks:{
+                    font: {
+                        family: 'Kulim Park',
+                        size: 12
+                    }
+                },
+                stacked: true,
+                grid: {
+                    display: false
+                }
+            },
+            y: {
+                ticks:{
+                    font: {
+                        family: 'Kulim Park',
+                        size: 12
+                    }
+                },
+                stacked: true,
+                beginAtZero: true
+            },
+        },
+    };
+
+    const emotionKeys = Object.keys(entryChartData?.[0] || {}).filter(key => key !== 'month');
+    
+    const colorPalette = [angryColor, excitedColor, happyColor, peacefulColor, reflectiveColor, sadColor, anxiousColor, lovestruckColor, neutralColor];
+
+    const entryChartDataset = emotionKeys.map((emotion, index) => ({
+        label: emotion.charAt(0).toUpperCase() + emotion.slice(1),
+        data: entryChartData.map(item => item[emotion]),
+        backgroundColor: colorPalette[index % colorPalette.length]
+    }));
+
+    const entryChartDataFormatted = {
+        labels: entryChartLabels,
+        datasets: entryChartDataset
+    };
 
     const averageEntryPerDay = (totalEntries / journalingDuration).toFixed(2)
     const averageWordsPerEntry = Number(wordStats?.avg_words).toFixed(2)
@@ -129,6 +226,32 @@ function Stats() {
 
         return []
     }
+
+    const getEntryChartData = async (user) => {
+        if (!user)
+            return [];
+
+        const userID = user.userID
+        const userDate = dayjs().format('YYYY-MM-DD')
+
+        try {
+            const API_URL = import.meta.env.VITE_API_URL
+        
+            const response = await axios.get(`${API_URL}/get-entry-chart-data`, {
+                params: {
+                    userDate,
+                    userID
+                }
+            })
+
+            return response.data;
+
+        } catch (err) {
+            console.log(err)
+        }
+
+        return []
+    }
     
     const openFilterPopover = (e) => {
         setFilterAnchorEl(e.currentTarget);
@@ -169,8 +292,8 @@ function Stats() {
                                     
                                 </div>
                                 
-                                <div className='row-span-3 bg-[var(--tomoi-gray)] rounded-xl p-3'>
-                                    stacked bar past 6 months
+                                <div className='row-span-3 bg-[var(--tomoi-white)] shadow-sm/40 rounded-xl px-6 flex items-center'>
+                                    <Bar options={entryChartOptions} data={entryChartDataFormatted}/>
                                 </div>
 
                                 <div className='relative bg-[var(--tomoi-gray)] overflow-hidden shadow-sm/30 rounded-xl p-6 flex gap-3 items-center'>
@@ -183,7 +306,7 @@ function Stats() {
                                         <div className='text-lg leading-none text-right'>Words per entry</div>
                                     </div>
                                     <div className='flex flex-col items-end leading-none grow'>
-                                        <div className='text-4xl font-bold leading-none'>{wordStats?.longest_entry}</div>
+                                        <div className='text-4xl font-bold leading-none'>{wordStats?.longest_entry} words</div>
                                         <div className='text-lg leading-none'>Longest entry</div>
                                     </div>
                                     <Alphabet className="z-1 opacity-30 absolute w-[10em] h-[10em] font-bold left-1 leading-none top-0 fill-[var(--tomoi-gray-d)]"/>
