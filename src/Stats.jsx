@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef, useMemo } from 'react';
 import { useAuth } from './components/AuthProvider';
 import Navbar from './components/Navbar';
-import { Alphabet, CaretDownFill, EmojiFrownFill, EmojiSmile, EmojiSmileFill, Fire, Tag, TagFill } from 'react-bootstrap-icons';
+import { Alphabet, CaretDownFill, Clock, EmojiFrownFill, EmojiSmile, EmojiSmileFill, Fire, Tag, TagFill } from 'react-bootstrap-icons';
 import { Popover } from '@mui/material';
 import { useQuery } from '@tanstack/react-query';
 import axios from "axios";
@@ -37,6 +37,18 @@ const feelingInterpretationMap = {
     'Peaceful' : ["Maintain that inner peace!", 'var(--tomoi-green-l)', 'var(--tomoi-green)'],
     'Reflective' : ["You must know yourself pretty well.", 'var(--tomoi-cyan-l)', 'var(--tomoi-cyan)'],
     'Neutral' : ["So you just don't feel anything about anything, huh.", 'var(--tomoi-gray-l)', 'var(--tomoi-gray)'],
+}
+
+const feelingMap = {
+    'Happy': 'var(--tomoi-yellow-l)',
+    'Sad': 'var(--tomoi-blue-l)',
+    'Angry': 'var(--tomoi-red-l)',
+    'Excited': 'var(--tomoi-orange-l)',
+    'Anxious': 'var(--tomoi-violet-l)',
+    'Neutral': 'var(--tomoi-gray-l)',
+    'Reflective': 'var(--tomoi-cyan-l)',
+    'Peaceful': 'var(--tomoi-green-l)',
+    'Lovestruck': 'var(--tomoi-pink-l)',
 }
 
 const rootStyles = getComputedStyle(document.documentElement);
@@ -86,13 +98,16 @@ function Stats() {
     const entryChartLabels = entryChartData?.map(({month}) => month);
   
     const entryChartOptions = {
+        responsive: true,
+        maintainAspectRatio: false,
         plugins: {
             title: {
                 display: true,
                 text: 'Entries from the Past 6 Months',
+                color: 'black',
                 font: {
                     family: 'Kulim Park',
-                    size: 24
+                    size: 24,
                 }
             },
             legend: {
@@ -214,10 +229,14 @@ function Stats() {
                     userID
                 }
             })
+            console.log(response.data)
             return {
                 total_words: response.data.total_words,
                 avg_words: response.data.avg_words,
-                longest_entry: response.data.longest_entry
+                longest_entry: response.data.longest_entry,
+                longest_post_title: response.data.title,
+                longest_post_feeling: response.data.feeling,
+                longest_post_date: dayjs(response.data.dateCreated).format('MMMM DD, YYYY')
             };
 
         } catch (err) {
@@ -292,23 +311,42 @@ function Stats() {
                                     
                                 </div>
                                 
-                                <div className='row-span-3 bg-[var(--tomoi-white)] shadow-sm/40 rounded-xl px-6 flex items-center'>
-                                    <Bar options={entryChartOptions} data={entryChartDataFormatted}/>
+                                <div className='row-span-4 bg-[var(--tomoi-white)] shadow-sm/40 rounded-xl px-6 flex items-center'>
+                                    <div className='w-full h-full p-4'>
+                                        <Bar options={entryChartOptions} data={entryChartDataFormatted}/>
+                                    </div>
                                 </div>
 
-                                <div className='relative bg-[var(--tomoi-gray)] overflow-hidden shadow-sm/30 rounded-xl p-6 flex gap-3 items-center'>
-                                    <div className='flex z-10 flex-col items-end leading-none grow'>
-                                        <div className='text-4xl text font-bold leading-none'>{wordStats?.total_words}</div>
-                                        <div className='text-lg leading-none'>Total words</div>
+                                <div className='relative row-span-2 bg-[var(--tomoi-gray)] overflow-hidden shadow-sm/30 rounded-xl p-6 flex flex-col gap-3 items-center'>
+                                    <div className='flex justify-between w-full'>
+                                        <div className='flex z-10 flex-col items-end leading-none grow'>
+                                            <div className='text-4xl text font-bold leading-none'>{wordStats?.total_words}</div>
+                                            <div className='text-lg leading-none'>Total words</div>
+                                        </div>
+                                        <div className='flex flex-col items-end leading-none grow'>
+                                            <div className='text-4xl font-bold leading-none'>{averageWordsPerEntry}</div>
+                                            <div className='text-lg leading-none text-right'>Words per entry</div>
+                                        </div>
                                     </div>
-                                    <div className='flex flex-col items-end leading-none grow'>
-                                        <div className='text-4xl font-bold leading-none'>{averageWordsPerEntry}</div>
-                                        <div className='text-lg leading-none text-right'>Words per entry</div>
+                                    
+                                    <div className='flex flex-col items-center justify-between bg-[var(--tomoi-white)] z-10 w-full gap-1 px-4 py-3 rounded-xl leading-none grow-2'>
+                                        <div className='leading-none text-left w-full text-lg bg-[var(--tomoi-gray-l)] px-4 py-1 font-bold rounded-xl'>Longest entry</div>
+                                        <div className='flex justify-between w-full'>
+                                            <div className='flex flex-col items-start gap-1'>
+                                                <div className='text-2xl font-bold leading-none'>{wordStats?.longest_post_title}</div>
+                                                <div className='text-md px-4 rounded-xl w-fit'
+                                                style={{
+                                                    'backgroundColor' : (feelingMap[wordStats?.longest_post_feeling])
+                                                }}>{wordStats?.longest_post_feeling}</div>
+                                                <div className='text-md leading-none'>{wordStats?.longest_post_date}</div>
+                                            </div>
+                                            <div className='text-4xl flex flex-col leading-none justify-center items-center'>
+                                                {wordStats?.longest_entry}
+                                                <div className='text-lg leading-none'>words</div>
+                                            </div>
+                                        </div>
                                     </div>
-                                    <div className='flex flex-col items-end leading-none grow'>
-                                        <div className='text-4xl font-bold leading-none'>{wordStats?.longest_entry} words</div>
-                                        <div className='text-lg leading-none'>Longest entry</div>
-                                    </div>
+                                    
                                     <Alphabet className="z-1 opacity-30 absolute w-[10em] h-[10em] font-bold left-1 leading-none top-0 fill-[var(--tomoi-gray-d)]"/>
                                 </div>
 

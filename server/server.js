@@ -848,6 +848,7 @@ app.get('/get-word-stats', (req, res) => {
     const { userID } = req.query;
     const query = `WITH word_counts AS (
                     SELECT
+                        c.contentID AS contentID,
                         CASE
                             WHEN TRIM(REGEXP_REPLACE(c.contentText, '[[:space:]]+', ' ')) = ''
                             THEN 0
@@ -859,13 +860,24 @@ app.get('/get-word-stats', (req, res) => {
                         FROM contents c
                         JOIN posts p ON c.contentID = p.contentID
                         WHERE p.author = ?
+                    ),
+                    stats AS (
+                        SELECT 
+                            SUM(word_count) AS total_words,
+                            AVG(word_count) AS avg_words,
+                            MAX(word_count) AS longest_entry
+                        FROM word_counts
                     )
-                    SELECT
-                        SUM(word_count) AS total_words,
-                        AVG(word_count) AS avg_words,
-                        MAX(word_count) AS longest_entry
-                    FROM word_counts
-                    ORDER BY word_count DESC;`
+                    SELECT 
+                        s.total_words,
+                        s.avg_words,
+                        s.longest_entry,
+                        po.*
+                    FROM stats s
+                    JOIN word_counts wc ON wc.word_count = s.longest_entry
+                    JOIN posts po ON wc.contentID = po.contentID
+                    ORDER BY po.contentID DESC
+                    LIMIT 1;`
     db.query(query, [toBinaryUUID(userID)], (err, result) => {
         if (err) {
             console.error('Error fetching word stats', err);

@@ -50,7 +50,7 @@ const feelingMap = {
         'Reflective': 'var(--tomoi-cyan-l)',
         'Peaceful': 'var(--tomoi-green-l)',
         'Lovestruck': 'var(--tomoi-pink-l)',
-    }
+}
 
 function Home() {
   const navigate = useNavigate();
@@ -97,6 +97,7 @@ function Home() {
                 userID
             }
         })
+        console.log(response.data)
         return response.data
     } catch (err) {
         console.error('Error getting latest entry:', err);
@@ -137,8 +138,6 @@ const getLastActivityEntry = async(user) => {
   })
 
   useEffect (() => {
-    
-
     getLatestEntry()
     getLastActivityEntry()
 }, [])
