@@ -7,8 +7,9 @@ import { useQuery } from '@tanstack/react-query';
 import axios from "axios";
 import dayjs from 'dayjs';
 import { useStreaks } from './components/useStreaks'
-import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend } from 'chart.js';
-import { Bar } from 'react-chartjs-2';
+import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ArcElement } from 'chart.js';
+import ChartDataLabels from 'chartjs-plugin-datalabels';
+import { Bar, Doughnut } from 'react-chartjs-2';
 
 ChartJS.register(
   CategoryScale,
@@ -16,7 +17,9 @@ ChartJS.register(
   BarElement,
   Title,
   Tooltip,
-  Legend
+  Legend,
+  ArcElement,
+  ChartDataLabels,
 );
 
 import JournalIcon from './assets/journal_menu_btn.svg?react';
@@ -40,15 +43,15 @@ const feelingInterpretationMap = {
 }
 
 const feelingMap = {
-    'Happy': 'var(--tomoi-yellow-l)',
-    'Sad': 'var(--tomoi-blue-l)',
     'Angry': 'var(--tomoi-red-l)',
     'Excited': 'var(--tomoi-orange-l)',
-    'Anxious': 'var(--tomoi-violet-l)',
-    'Neutral': 'var(--tomoi-gray-l)',
-    'Reflective': 'var(--tomoi-cyan-l)',
+    'Happy': 'var(--tomoi-yellow-l)',
     'Peaceful': 'var(--tomoi-green-l)',
+    'Reflective': 'var(--tomoi-cyan-l)',
+    'Sad': 'var(--tomoi-blue-l)',
+    'Anxious': 'var(--tomoi-violet-l)',
     'Lovestruck': 'var(--tomoi-pink-l)',
+    'Neutral': 'var(--tomoi-gray-l)',
 }
 
 const rootStyles = getComputedStyle(document.documentElement);
@@ -95,21 +98,19 @@ function Stats() {
         enabled: !!user
     })
 
+    const { data: feelingChartData = null } = useQuery({
+        queryKey:['feelingChartData', user.userID],
+        queryFn: () => getFeelingChartData(user),
+        enabled: !!user
+    })
+
     const entryChartLabels = entryChartData?.map(({month}) => month);
+    const feelingChartLabels = Object.keys(feelingMap)
   
     const entryChartOptions = {
         responsive: true,
         maintainAspectRatio: false,
         plugins: {
-            title: {
-                display: true,
-                text: 'Entries from the Past 6 Months',
-                color: 'black',
-                font: {
-                    family: 'Kulim Park',
-                    size: 24,
-                }
-            },
             legend: {
                 labels: {
                     font: {
@@ -122,6 +123,9 @@ function Stats() {
             tooltip: {
                 titleFont: {family: 'Kulim Park'},
                 bodyfont: {family: 'Kulim Park'}
+            },
+            datalabels: {
+                display: false
             }
         },
         responsive: true,
@@ -151,6 +155,43 @@ function Stats() {
         },
     };
 
+    const feelingChartOptions = {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                position:'left',
+                align: 'center',
+                labels: {
+                    font: {
+                        size: 12,
+                        family: 'Kulim Park'
+                    },
+                    boxWidth: 15
+                }
+            },
+            tooltip: {
+                titleFont: {family: 'Kulim Park'},
+                bodyfont: {family: 'Kulim Park'}
+            },
+            datalabels: {
+                formatter: (value, ctx) => {
+                    let sum = ctx.chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
+                    let percentage = ((value / sum) * 100).toFixed(1) + "%";
+                    if ((value / sum) * 100 == 0)
+                        return "";
+                    return percentage;
+                },
+                color: '#000000',
+                font: {
+                    size: 12,
+                    family: 'Kulim Park'
+                },
+            }
+        },
+        responsive: true,
+    };
+
     const emotionKeys = Object.keys(entryChartData?.[0] || {}).filter(key => key !== 'month');
     
     const colorPalette = [angryColor, excitedColor, happyColor, peacefulColor, reflectiveColor, sadColor, anxiousColor, lovestruckColor, neutralColor];
@@ -161,9 +202,31 @@ function Stats() {
         backgroundColor: colorPalette[index % colorPalette.length]
     }));
 
+    const feelingCounts = Object.fromEntries(
+       ( feelingChartData ?? []).map(row => [row.feeling, row.count])
+    );
+
+    const feelingOrdered = Object.keys(feelingMap).map(feeling => ({
+        feeling,
+        count: feelingCounts[feeling] ?? 0
+    }));
+    
+    console.log(feelingOrdered)
+
+    const feelingChartDataset = {
+        label: 'Count',
+        data: feelingOrdered?.map(item => item['count']) || [],
+        backgroundColor: colorPalette
+    }
+
     const entryChartDataFormatted = {
         labels: entryChartLabels,
         datasets: entryChartDataset
+    };
+
+    const feelingChartDataFormatted = {
+        labels: feelingChartLabels,
+        datasets: [feelingChartDataset]
     };
 
     const averageEntryPerDay = (totalEntries / journalingDuration).toFixed(2)
@@ -271,6 +334,29 @@ function Stats() {
 
         return []
     }
+
+    const getFeelingChartData = async (user) => {
+        if (!user)
+            return [];
+
+        const userID = user.userID
+        try {
+            const API_URL = import.meta.env.VITE_API_URL
+        
+            const response = await axios.get(`${API_URL}/get-feeling-chart-data`, {
+                params: {
+                    userID
+                }
+            })
+
+            return response.data;
+
+        } catch (err) {
+            console.log(err)
+        }
+
+        return []
+    }
     
     const openFilterPopover = (e) => {
         setFilterAnchorEl(e.currentTarget);
@@ -295,16 +381,16 @@ function Stats() {
                         </div>
                         <div className='flex flex-col bg-[var(--tomoi-white)] outline-2 outline-dashed outline-[var(--tomoi-gray-d)] w-full rounded-xl p-6 gap-4'>
                             <div className='flex w-full'>
-                                <div className='font-bold shadow-sm/30 text-4xl w-full bg-[var(--tomoi-yellow-l)] h-fit p-3 rounded-xl'>Entries</div>
+                                <div className='font-bold shadow-sm/30 text-3xl w-full bg-[var(--tomoi-yellow-l)] h-fit p-3 rounded-xl'>Entries</div>
                             </div>
                             <div className='grid grid-cols-2 rows-2 gap-2 w-full'>
                                 <div className='relative bg-[var(--tomoi-white)] shadow-sm/30 overflow-hidden rounded-xl p-6 flex gap-3 items-center'>
                                     <div className='flex flex-col leading-none grow'>
-                                        <div className='text-4xl font-bold leading-none'>{totalEntries}</div>
+                                        <div className='text-3xl font-bold leading-none'>{totalEntries}</div>
                                         <div className='text-lg leading-none'>Total entries</div>
                                     </div>
                                     <div className='flex flex-col leading-none grow z-10'>
-                                        <div className='text-4xl font-bold leading-none'>{averageEntryPerDay}</div>
+                                        <div className='text-3xl font-bold leading-none'>{averageEntryPerDay}</div>
                                         <div className='text-lg leading-none'>Entries per day</div>
                                     </div>
                                     <JournalIcon className="rotate-15 absolute w-[8em] z-1 right-1 mt-20 fill-[var(--tomoi-gray)]" />
@@ -312,65 +398,74 @@ function Stats() {
                                 </div>
                                 
                                 <div className='row-span-4 bg-[var(--tomoi-white)] shadow-sm/40 rounded-xl px-6 flex items-center'>
-                                    <div className='w-full h-full p-4'>
-                                        <Bar options={entryChartOptions} data={entryChartDataFormatted}/>
+                                    <div className='w-full h-full p-4 flex flex-col item-center justify-center'>
+                                        <div className='text-3xl text-left font-bold'>Recent entries data</div>
+                                        <div className='grow'>
+                                            <Bar options={entryChartOptions} data={entryChartDataFormatted}/>
+                                        </div>
                                     </div>
                                 </div>
 
-                                <div className='relative row-span-2 bg-[var(--tomoi-gray)] overflow-hidden shadow-sm/30 rounded-xl p-6 flex flex-col gap-3 items-center'>
-                                    <div className='flex justify-between w-full'>
-                                        <div className='flex z-10 flex-col items-end leading-none grow'>
-                                            <div className='text-4xl text font-bold leading-none'>{wordStats?.total_words}</div>
-                                            <div className='text-lg leading-none'>Total words</div>
-                                        </div>
-                                        <div className='flex flex-col items-end leading-none grow'>
-                                            <div className='text-4xl font-bold leading-none'>{averageWordsPerEntry}</div>
-                                            <div className='text-lg leading-none text-right'>Words per entry</div>
-                                        </div>
+                                <div className='relative row-span-1 bg-[var(--tomoi-gray)] overflow-hidden shadow-sm/30 rounded-xl p-6 flex gap-3 items-center'>
+                                    <div className='flex z-10 flex-col items-end leading-none grow'>
+                                        <div className='text-3xl text font-bold leading-none'>{wordStats?.total_words}</div>
+                                        <div className='text-lg leading-none'>Total words</div>
                                     </div>
-                                    
-                                    <div className='flex flex-col items-center justify-between bg-[var(--tomoi-white)] z-10 w-full gap-1 px-4 py-3 rounded-xl leading-none grow-2'>
-                                        <div className='leading-none text-left w-full text-lg bg-[var(--tomoi-gray-l)] px-4 py-1 font-bold rounded-xl'>Longest entry</div>
-                                        <div className='flex justify-between w-full'>
-                                            <div className='flex flex-col items-start gap-1'>
-                                                <div className='text-2xl font-bold leading-none'>{wordStats?.longest_post_title}</div>
-                                                <div className='text-md px-4 rounded-xl w-fit'
-                                                style={{
-                                                    'backgroundColor' : (feelingMap[wordStats?.longest_post_feeling])
-                                                }}>{wordStats?.longest_post_feeling}</div>
-                                                <div className='text-md leading-none'>{wordStats?.longest_post_date}</div>
-                                            </div>
-                                            <div className='text-4xl flex flex-col leading-none justify-center items-center'>
-                                                {wordStats?.longest_entry}
-                                                <div className='text-lg leading-none'>words</div>
-                                            </div>
-                                        </div>
+                                    <div className='flex flex-col items-end leading-none grow'>
+                                        <div className='text-3xl font-bold leading-none'>{averageWordsPerEntry}</div>
+                                        <div className='text-lg leading-none text-right'>Words per entry</div>
                                     </div>
-                                    
                                     <Alphabet className="z-1 opacity-30 absolute w-[10em] h-[10em] font-bold left-1 leading-none top-0 fill-[var(--tomoi-gray-d)]"/>
+                                </div>
+
+                                <div className='relative bg-[var(--tomoi-gray)] overflow-hidden shadow-sm/30 rounded-xl p-6 flex gap-3 items-center'>
+                                    <div className='w-full flex flex-col gap-2'>
+                                        <div className='flex flex-col items-center justify-between bg-[var(--tomoi-white)] z-10 w-full gap-1 rounded-xl p-4 leading-none grow-2'>
+                                            <div className='flex justify-between w-full'>
+                                                <div className='flex flex-col items-start gap-1'>
+                                                    <div className='text-2xl font-bold leading-none'>{wordStats?.longest_post_title}</div>
+                                                    <div className='text-md px-4 rounded-xl w-fit'
+                                                    style={{
+                                                        'backgroundColor' : (feelingMap[wordStats?.longest_post_feeling])
+                                                    }}>{wordStats?.longest_post_feeling}</div>
+                                                    <div className='text-md leading-none'>{wordStats?.longest_post_date}</div>
+                                                </div>
+                                                <div className='text-3xl flex flex-col leading-none justify-center items-center'>
+                                                    {wordStats?.longest_entry}
+                                                    <div className='text-lg leading-none'>words</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div className='text-lg leading-none text-left'>Longest entry</div>
+                                    </div>
                                 </div>
 
                                 <div className='relative bg-[var(--tomoi-white)] overflow-hidden shadow-sm/30 rounded-xl p-6 flex gap-3 items-center'>
                                     <div className='flex flex-col leading-none grow z-10'>
-                                        <div className='text-4xl font-bold leading-none'>{streakStats?.bestStreak} days</div>
+                                        <div className='text-3xl font-bold leading-none'>{streakStats?.bestStreak} days</div>
                                         <div className='text-lg leading-none'>Best writing streak</div>
                                     </div>
                                     <div className='flex flex-col leading-none grow z-10'>
-                                        <div className='text-4xl font-bold leading-none'>{streakStats?.currentStreak} days</div>
+                                        <div className='text-3xl font-bold leading-none'>{streakStats?.currentStreak} days</div>
                                         <div className='text-lg leading-none'>Current writing streak</div>
                                     </div>
                                     <Fire className="z-1 rotate-15 absolute w-[8em] h-[8em] right-1 top-0 fill-[var(--tomoi-orange-l)]" />
                                     
                                 </div>
 
-                                <div className='row-span-3 bg-[var(--tomoi-gray)] rounded-xl p-3'>
-                                    feeling doughnut
+                                <div className='row-span-3 bg-[var(--tomoi-white)] shadow-sm/40 rounded-xl px-6 flex items-center'>
+                                    <div className='w-full h-full p-4 flex flex-col'>
+                                        <div className='text-3xl font-bold'>Feeling distribution</div>
+                                        <div className='grow'>
+                                            <Doughnut options={feelingChartOptions} data={feelingChartDataFormatted}/>
+                                        </div>
+                                    </div>
                                 </div>
 
                                 <div className='relative bg-[var(--tomoi-yellow-l)] shadow-sm/30 overflow-hidden rounded-xl p-6 flex gap-3 items-center'>
                                     <div className='flex z-10 flex-col items-start leading-none grow'>
                                         <div className='text-lg leading-none'>My most used feeling was...</div>
-                                        <div className='text-4xl font-bold leading-none'>Happy</div>
+                                        <div className='text-3xl font-bold leading-none'>Happy</div>
                                     </div>
                                     <div className='flex z-10 flex-col items-end leading-none grow'>
                                         <div className='text-lg bg-[var(--tomoi-white)] leading-none text-center border-2 -rotate-5 border-dashed italic w-[70%]'>You live your life with a smile on your face!</div>
@@ -380,11 +475,11 @@ function Stats() {
 
                                 <div className='relative bg-[var(--tomoi-yellow)] overflow-hidden shadow-sm/30 rounded-xl p-6 flex gap-3 items-center'>
                                     <div className='flex z-10 flex-col items-end leading-none grow'>
-                                        <div className='text-4xl text font-bold leading-none'>June 2026</div>
+                                        <div className='text-3xl text font-bold leading-none'>June 2026</div>
                                         <div className='text-lg leading-none'>was my happiest month.</div>
                                     </div>
                                     <div className='flex flex-col items-end leading-none grow'>
-                                        <div className='text-4xl font-bold leading-none'>67%</div>
+                                        <div className='text-3xl font-bold leading-none'>67%</div>
                                         <div className='text-lg leading-none'>positive feelings</div>
                                     </div>
                                     <EmojiSmileFill className="z-1 -rotate-15 absolute w-[8em] h-[8em] font-bold left-1 leading-none top-0 fill-[var(--tomoi-yellow-l)]"/>
@@ -392,11 +487,11 @@ function Stats() {
 
                                 <div className='relative bg-[var(--tomoi-blue)] overflow-hidden shadow-sm/30 rounded-xl p-6 flex gap-3 items-center'>
                                     <div className='flex flex-col leading-none grow z-10'>
-                                        <div className='text-4xl font-bold leading-none'>September 2025</div>
+                                        <div className='text-3xl font-bold leading-none'>September 2025</div>
                                         <div className='text-lg leading-none'>was my saddest month.</div>
                                     </div>
                                     <div className='flex flex-col leading-none grow z-10'>
-                                        <div className='text-4xl font-bold leading-none'>100%</div>
+                                        <div className='text-3xl font-bold leading-none'>100%</div>
                                         <div className='text-lg leading-none'>negative feelings</div>
                                     </div>
                                     <EmojiFrownFill className="z-1 rotate-15 absolute w-[8em] h-[8em] right-1 top-0 fill-[var(--tomoi-blue-l)]" />
@@ -407,7 +502,7 @@ function Stats() {
                                     <div className='relative bg-[var(--tomoi-white)] overflow-hidden rounded-xl p-6 flex gap-3 items-center'>
                                         <div className='flex flex-col leading-none grow z-10'>
                                             <div className='text-lg leading-none'>My most used tags</div>
-                                            <div className='text-4xl font-bold leading-none'>boompala</div>
+                                            <div className='text-3xl font-bold leading-none'>boompala</div>
                                         </div>
                                         <TagFill className="z-1 rotate-65 absolute w-[8em] h-[8em] right-1 top-0 fill-[var(--tomoi-gray-l)]" />
                                     </div>

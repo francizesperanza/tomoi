@@ -982,6 +982,28 @@ app.get('/get-entry-chart-data', (req, res) => {
     });
 });
 
+app.get('/get-feeling-chart-data', (req, res) => {
+    const { userID } = req.query;
+    const query = `
+        SELECT
+            f.feeling,
+            COUNT(p.feeling) AS count
+        FROM feelings f
+        LEFT JOIN posts p
+            ON p.feeling = f.feeling
+        AND p.author = ?
+        GROUP BY f.feeling;
+    `
+    db.query(query, [toBinaryUUID(userID)], (err, result) => {
+        if (err) {
+            console.error('Error fetching feeling chart data', err);
+            res.status(500).json({ error: 'Error fetching feeling chart data' });
+        } else {
+            res.json(result);
+        }
+    });
+});
+
 // TESTING ENDPOINT
 
 app.post('/seed-posts', seedPosts(db, createBinaryUUID, toBinaryUUID))
