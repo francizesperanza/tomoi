@@ -1004,6 +1004,59 @@ app.get('/get-feeling-chart-data', (req, res) => {
     });
 });
 
+app.get('/get-feeling-month-data', (req, res) => {
+    const { userDate, userID } = req.query;
+    const query = `
+    
+    WITH RECURSIVE
+    min_month AS (
+        SELECT DATE_FORMAT(MIN(dateCreated), '%Y-%m-01') AS first_month
+        FROM posts
+        WHERE author = ?
+    ),
+    months AS (
+        SELECT DATE_FORMAT(?, '%Y-%m-01') AS month_start
+
+        UNION ALL
+
+        SELECT DATE_SUB(month_start, INTERVAL 1 MONTH)
+        FROM months
+        CROSS JOIN min_month
+        WHERE month_start > first_month
+    )
+
+    SELECT
+        DATE_FORMAT(m.month_start, '%M %Y') AS month,
+
+        COUNT(CASE WHEN 
+            p.feeling = 'Happy' OR 
+            p.feeling = 'Excited' OR
+            p.feeling = 'Peaceful' OR
+            p.feeling = 'Reflective' OR
+            p.feeling = 'Lovestruck' THEN 1 END) AS happy_count,
+        COUNT(CASE WHEN 
+            p.feeling = 'Sad' OR
+            p.feeling = 'Anxious' OR
+            p.feeling = 'Angry' THEN 1 END) AS sad_count
+
+    FROM months m
+    LEFT JOIN posts p
+        ON DATE_FORMAT(p.dateCreated, '%Y-%m') =
+        DATE_FORMAT(m.month_start, '%Y-%m')
+    AND author = ?
+
+    GROUP BY m.month_start
+    ORDER BY m.month_start ASC;`
+    
+    db.query(query, [toBinaryUUID(userID), userDate, toBinaryUUID(userID)], (err, result) => {
+        if (err) {
+            console.error('Error fetching feeling month data', err);
+            res.status(500).json({ error: 'Error fetching feeling month data' });
+        } else {
+            res.json(result);
+        }
+    });
+});
 // TESTING ENDPOINT
 
 app.post('/seed-posts', seedPosts(db, createBinaryUUID, toBinaryUUID))

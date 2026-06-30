@@ -34,12 +34,13 @@ const filterOptionsMap = {
 const feelingInterpretationMap = {
     'Happy' : ['You live your life with a smile on your face!', 'var(--tomoi-yellow-l)', 'var(--tomoi-yellow)'],
     'Sad' : ["You're dealing with a lot right now, but I'm here for you.", 'var(--tomoi-blue-l)', 'var(--tomoi-blue)'],
-    'Anger' : ["I'm sure you're upset for the right reasons.", 'var(--tomoi-red-l)', 'var(--tomoi-red)'],
+    'Angry' : ["I'm sure you were upset for the right reasons.", 'var(--tomoi-red-l)', 'var(--tomoi-red)'],
     'Anxious' : ["Shake off the nerves! You're amazing!", 'var(--tomoi-violet-l)', 'var(--tomoi-violet)'],
     'Lovestruck' : ["Someone's in looooooove~", 'var(--tomoi-pink-l)', 'var(--tomoi-pink)'],
     'Peaceful' : ["Maintain that inner peace!", 'var(--tomoi-green-l)', 'var(--tomoi-green)'],
     'Reflective' : ["You must know yourself pretty well.", 'var(--tomoi-cyan-l)', 'var(--tomoi-cyan)'],
     'Neutral' : ["So you just don't feel anything about anything, huh.", 'var(--tomoi-gray-l)', 'var(--tomoi-gray)'],
+    'Excited' : ["You are buzzing with joy!", 'var(--tomoi-orange-l)', 'var(--tomoi-orange)'],
 }
 
 const feelingMap = {
@@ -103,6 +104,37 @@ function Stats() {
         queryFn: () => getFeelingChartData(user),
         enabled: !!user
     })
+
+    const { data: feelingMonthData = null } = useQuery({
+        queryKey:['feelingMonthData', user.userID],
+        queryFn: () => getFeelingMonthData(user),
+        enabled: !!user
+    })
+
+    const mostUsedFeeling = feelingChartData?.reduce((maxEntry, entry) => 
+        entry.count > maxEntry.score ? entry : maxEntry
+    );
+
+    const happiestMonth = feelingMonthData?.reduce((maxEntry, entry) => {
+        const entryPercentage = ((entry.happy_count / (entry.happy_count + entry.sad_count)) * 100).toFixed(2)
+        const maxPercentage = ((maxEntry.happy_count / (maxEntry.happy_count + maxEntry.sad_count)) * 100).toFixed(2)
+        if (entryPercentage > maxPercentage)
+            return entry
+        else 
+            return maxEntry
+    });
+
+    const saddestMonth = feelingMonthData?.reduce((maxEntry, entry) => {
+        const entryPercentage = ((entry.sad_count / (entry.happy_count + entry.sad_count)) * 100).toFixed(2)
+        const maxPercentage = ((maxEntry.sad_count / (maxEntry.happy_count + maxEntry.sad_count)) * 100).toFixed(2)
+        if (entryPercentage > maxPercentage)
+            return entry
+        else 
+            return maxEntry
+    });
+
+    const happyMonthPercentage = ((happiestMonth?.happy_count / (happiestMonth?.happy_count + happiestMonth?.sad_count)) * 100).toFixed(2)
+    const sadMonthPercentage = ((saddestMonth?.sad_count / (saddestMonth?.happy_count + saddestMonth?.sad_count)) * 100).toFixed(2)
 
     const entryChartLabels = entryChartData?.map(({month}) => month);
     const feelingChartLabels = Object.keys(feelingMap)
@@ -357,6 +389,33 @@ function Stats() {
 
         return []
     }
+
+    const getFeelingMonthData = async (user) => {
+        if (!user)
+            return [];
+
+        const userID = user.userID
+        const userDate = dayjs().format('YYYY-MM-DD')
+
+        try {
+            const API_URL = import.meta.env.VITE_API_URL
+        
+            const response = await axios.get(`${API_URL}/get-feeling-month-data`, {
+                params: {
+                    userDate,
+                    userID
+                }
+            })
+
+            console.log(response.data)
+            return response.data;
+
+        } catch (err) {
+            console.log(err)
+        }
+
+        return []
+    }
     
     const openFilterPopover = (e) => {
         setFilterAnchorEl(e.currentTarget);
@@ -398,7 +457,7 @@ function Stats() {
                                 </div>
                                 
                                 <div className='row-span-4 bg-[var(--tomoi-white)] shadow-sm/40 rounded-xl px-6 flex items-center'>
-                                    <div className='w-full h-full p-4 flex flex-col item-center justify-center'>
+                                    <div className='w-full h-full px-4 py-8 flex flex-col item-center justify-center'>
                                         <div className='text-3xl text-left font-bold'>Recent entries data</div>
                                         <div className='grow'>
                                             <Bar options={entryChartOptions} data={entryChartDataFormatted}/>
@@ -454,7 +513,7 @@ function Stats() {
                                 </div>
 
                                 <div className='row-span-3 bg-[var(--tomoi-white)] shadow-sm/40 rounded-xl px-6 flex items-center'>
-                                    <div className='w-full h-full p-4 flex flex-col'>
+                                    <div className='w-full h-full px-4 py-8 flex flex-col'>
                                         <div className='text-3xl font-bold'>Feeling distribution</div>
                                         <div className='grow'>
                                             <Doughnut options={feelingChartOptions} data={feelingChartDataFormatted}/>
@@ -462,24 +521,26 @@ function Stats() {
                                     </div>
                                 </div>
 
-                                <div className='relative bg-[var(--tomoi-yellow-l)] shadow-sm/30 overflow-hidden rounded-xl p-6 flex gap-3 items-center'>
+                                <div className='relative bg-[var(--tomoi-yellow-l)] shadow-sm/30 overflow-hidden rounded-xl p-6 flex gap-3 items-center'
+                                    style={{"backgroundColor" : feelingInterpretationMap[mostUsedFeeling?.feeling]?.[1]}}>
                                     <div className='flex z-10 flex-col items-start leading-none grow'>
                                         <div className='text-lg leading-none'>My most used feeling was...</div>
-                                        <div className='text-3xl font-bold leading-none'>Happy</div>
+                                        <div className='text-3xl font-bold leading-none'>{mostUsedFeeling?.feeling}</div>
                                     </div>
                                     <div className='flex z-10 flex-col items-end leading-none grow'>
-                                        <div className='text-lg bg-[var(--tomoi-white)] leading-none text-center border-2 -rotate-5 border-dashed italic w-[70%]'>You live your life with a smile on your face!</div>
+                                        <div className='text-lg bg-[var(--tomoi-white)] leading-none text-center border-2 -rotate-5 border-dashed italic w-[70%]'>{feelingInterpretationMap[mostUsedFeeling?.feeling]?.[0]}</div>
                                     </div>
-                                    <EmojiSmile className="z-1 absolute w-[10em] h-[10em] font-bold right-1 leading-none top-0 fill-[var(--tomoi-yellow)]"/>
+                                    <EmojiSmile className="z-1 absolute w-[10em] h-[10em] font-bold right-1 leading-none top-0"
+                                        style={{"fill" : feelingInterpretationMap[mostUsedFeeling?.feeling]?.[2]}}/>
                                 </div>
 
                                 <div className='relative bg-[var(--tomoi-yellow)] overflow-hidden shadow-sm/30 rounded-xl p-6 flex gap-3 items-center'>
                                     <div className='flex z-10 flex-col items-end leading-none grow'>
-                                        <div className='text-3xl text font-bold leading-none'>June 2026</div>
+                                        <div className='text-3xl text font-bold leading-none'>{happiestMonth?.month}</div>
                                         <div className='text-lg leading-none'>was my happiest month.</div>
                                     </div>
                                     <div className='flex flex-col items-end leading-none grow'>
-                                        <div className='text-3xl font-bold leading-none'>67%</div>
+                                        <div className='text-3xl font-bold leading-none'>{happyMonthPercentage}%</div>
                                         <div className='text-lg leading-none'>positive feelings</div>
                                     </div>
                                     <EmojiSmileFill className="z-1 -rotate-15 absolute w-[8em] h-[8em] font-bold left-1 leading-none top-0 fill-[var(--tomoi-yellow-l)]"/>
@@ -487,11 +548,11 @@ function Stats() {
 
                                 <div className='relative bg-[var(--tomoi-blue)] overflow-hidden shadow-sm/30 rounded-xl p-6 flex gap-3 items-center'>
                                     <div className='flex flex-col leading-none grow z-10'>
-                                        <div className='text-3xl font-bold leading-none'>September 2025</div>
+                                        <div className='text-3xl font-bold leading-none'>{saddestMonth?.month}</div>
                                         <div className='text-lg leading-none'>was my saddest month.</div>
                                     </div>
                                     <div className='flex flex-col leading-none grow z-10'>
-                                        <div className='text-3xl font-bold leading-none'>100%</div>
+                                        <div className='text-3xl font-bold leading-none'>{sadMonthPercentage}%</div>
                                         <div className='text-lg leading-none'>negative feelings</div>
                                     </div>
                                     <EmojiFrownFill className="z-1 rotate-15 absolute w-[8em] h-[8em] right-1 top-0 fill-[var(--tomoi-blue-l)]" />
