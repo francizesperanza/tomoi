@@ -755,52 +755,6 @@ app.get('/get-favorite-entries', (req, res) => {
     });
 });
 
-/* app.get('/get-selected-date-entry', (req, res) => {
-    const { userID, startDate, endDate} = req.query;
-    const query = 'SELECT * FROM posts JOIN contents ON posts.contentID = contents.contentID WHERE posts.author = ? AND dateCreated >= ? AND dateCreated < ?';
-    db.query(query, [toBinaryUUID(userID), startDate, endDate], (err, result) => {
-        if (err) {
-            console.error('Error fetching entry', err);
-            res.status(500).json({ error: 'Error fetching entry' });
-        } else {;
-            if (result.length < 1) {
-                return res.json(result);
-            }
-            
-            const postNumberQuery = `SELECT postNumber FROM (
-                                        SELECT postID, ROW_NUMBER() OVER (ORDER BY dateCreated ASC) AS postNumber FROM posts
-                                    ) ranked
-                                    WHERE postID = ?`
-
-            db.query(postNumberQuery, [result[0].postID], (err, postNumber) => {
-                if (err) {
-                    console.error('Error getting post number', err);
-                    res.status(500).json({error: 'Error getting post number'})
-                }
-
-                const tagSelectQuery = `SELECT tagName FROM post_tags JOIN tags ON post_tags.tagID = tags.tagID WHERE post_tags.postID = ?`
-
-                db.query(tagSelectQuery, [result[0].postID], (err, tags) => {
-                    if (err) {
-                        console.error('Error getting tags', err);
-                        res.status(500).json({error: 'Error getting tags'})
-                    }
-                    
-                    const updatedEntry = {
-                        ...result[0],
-                        postNumber: postNumber[0].postNumber,
-                        tags: tags.map(tag => tag.tagName)
-                    }
-
-                    res.json(updatedEntry);
-                })
-
-            })
-            
-        }
-    });
-}); */
-
 app.put('/update-favorite', (req, res) => {
     const {postID, favorite} = req.body;
 
@@ -1057,6 +1011,29 @@ app.get('/get-feeling-month-data', (req, res) => {
         }
     });
 });
+
+app.get('/get-top-10-tags', (req, res) => {
+    const { userID } = req.query;
+    const query = `
+    
+    SELECT t.tagName, COUNT(pt.postID) AS use_count FROM post_tags pt
+    JOIN tags t ON pt.tagID = t.tagID
+    JOIN posts p ON p.postID = pt.postID
+    AND p.author = ?
+    GROUP BY t.tagName
+    ORDER BY use_count DESC
+    LIMIT 10;`
+    
+    db.query(query, [toBinaryUUID(userID)], (err, result) => {
+        if (err) {
+            console.error('Error fetching top tags', err);
+            res.status(500).json({ error: 'Error fetching top tags' });
+        } else {
+            res.json(result);
+        }
+    });
+});
+
 // TESTING ENDPOINT
 
 app.post('/seed-posts', seedPosts(db, createBinaryUUID, toBinaryUUID))

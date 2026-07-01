@@ -10,6 +10,8 @@ import { useStreaks } from './components/useStreaks'
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ArcElement } from 'chart.js';
 import ChartDataLabels from 'chartjs-plugin-datalabels';
 import { Bar, Doughnut } from 'react-chartjs-2';
+import { animate, stagger, createScope, set, random, createTimeline} from 'animejs'
+import { onScroll } from 'animejs';
 
 ChartJS.register(
   CategoryScale,
@@ -70,6 +72,7 @@ const neutralColor = rootStyles.getPropertyValue('--tomoi-gray-l').trim();
 function Stats() {
     const { user } = useAuth();
     const [filterAnchorEl, setFilterAnchorEl] = useState(null);
+    const tagsContainerRef = useRef(null);
     const statFilter = 'all'
     
     const openFilterOptions = Boolean(filterAnchorEl);
@@ -108,6 +111,12 @@ function Stats() {
     const { data: feelingMonthData = null } = useQuery({
         queryKey:['feelingMonthData', user.userID],
         queryFn: () => getFeelingMonthData(user),
+        enabled: !!user
+    })
+
+    const { data: topTags = null } = useQuery({
+        queryKey:['topTags', user.userID],
+        queryFn: () => getTopTags(user),
         enabled: !!user
     })
 
@@ -242,8 +251,6 @@ function Stats() {
         feeling,
         count: feelingCounts[feeling] ?? 0
     }));
-    
-    console.log(feelingOrdered)
 
     const feelingChartDataset = {
         label: 'Count',
@@ -416,6 +423,30 @@ function Stats() {
 
         return []
     }
+
+    const getTopTags = async (user) => {
+        if (!user)
+            return [];
+
+        const userID = user.userID
+
+        try {
+            const API_URL = import.meta.env.VITE_API_URL
+
+            const response = await axios.get(`${API_URL}/get-top-10-tags`, {
+                params: {
+                    userID
+                }
+            })
+
+            return response.data;
+
+        } catch (err) {
+            console.log(err)
+        }
+
+        return []
+    }
     
     const openFilterPopover = (e) => {
         setFilterAnchorEl(e.currentTarget);
@@ -425,25 +456,54 @@ function Stats() {
         setFilterAnchorEl(null);
     }
 
+    useEffect(() => {
+        if (!topTags || topTags.length === 0 || !tagsContainerRef.current) {
+            return;
+        }
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach((entry) => {
+                if (entry.isIntersecting) {
+                    const tags = entry.target.querySelectorAll('.tags');
+                    if (tags.length > 0) {
+                        animate('.tags', {
+                            translateX: [100, 0],
+                            opacity: [0, 1],
+                            duration: 600,
+                            delay: stagger(50),
+                            easing: 'easeOutQuad'
+                        });
+                    }
+                    observer.unobserve(entry.target);
+                }
+            });
+        }, {
+            threshold: 0.3
+        });
+
+        observer.observe(tagsContainerRef.current);
+
+        return () => {
+            if (tagsContainerRef.current) {
+                observer.unobserve(tagsContainerRef.current);
+            }
+        };
+    }, [topTags]);
+
     return (
     <>
         <div className='bg-[var(--tomoi-yellow-l)]'>
             <Navbar></Navbar>
             <div className='flex flex-col min-h-dvh p-8 w-full overflow-y-auto justify-center items-center'>
-                <div className='flex w-full max-w-7xl h-[80%] items-stretch justify-center z-10 gap-4'>
-                    <div className='flex flex-col items-stretch bg-[var(--tomoi-gray)] gap-3 w-full rounded-xl p-4 shadow-md/40'>
-                        <div className='flex justify-between items-center w-full gap-2 text-sm'>
-                            <div className='text-3xl font-bold ml-4'>{user.username}'s Stats</div>
-                            <div onClick={(e) => openFilterPopover(e)} className='hover:outline-1 outline-dashed outline-0 select-none items-center py-3 h-full flex justify-between bg-[var(--tomoi-white)] w-[10vw] leading-none px-3 rounded-xl text-sm'>{filterOptionsMap[statFilter]}
-                                <CaretDownFill className='text-[var(--tomoi-gray-d)]'></CaretDownFill>
-                            </div>
-                        </div>
-                        <div className='flex flex-col bg-[var(--tomoi-white)] outline-2 outline-dashed outline-[var(--tomoi-gray-d)] w-full rounded-xl p-6 gap-4'>
+                <div className='flex w-full max-w-6xl h-[80%] items-stretch justify-center z-10 gap-4'>
+                    <div className='flex flex-col items-stretch bg-[var(--tomoi-yellow)] gap-3 w-full rounded-xl p-5 shadow-md/40'>
+                        
+                        <div className='flex flex-col bg-[var(--tomoi-white)] outline-2 outline-dashed outline-[var(--tomoi-yellow-d)] w-full rounded-xl p-6 gap-4'>
                             <div className='flex w-full'>
-                                <div className='font-bold shadow-sm/30 text-3xl w-full bg-[var(--tomoi-yellow-l)] h-fit p-3 rounded-xl'>Entries</div>
+                                <div className='font-bold text-3xl outline-2 outline-dashed w-full bg-[var(--tomoi-yellow-l)] h-fit p-3 rounded-xl'>Entries</div>
                             </div>
-                            <div className='grid grid-cols-2 rows-2 gap-2 w-full'>
-                                <div className='relative bg-[var(--tomoi-white)] shadow-sm/30 overflow-hidden rounded-xl p-6 flex gap-3 items-center'>
+                            <div className='grid grid-cols-2 rows-2 gap-4 w-full'>
+                                <div className='relative bg-[var(--tomoi-white)] outline-2 outline-dashed overflow-hidden rounded-xl p-6 flex gap-3 items-center'>
                                     <div className='flex flex-col leading-none grow'>
                                         <div className='text-3xl font-bold leading-none'>{totalEntries}</div>
                                         <div className='text-lg leading-none'>Total entries</div>
@@ -456,7 +516,7 @@ function Stats() {
                                     
                                 </div>
                                 
-                                <div className='row-span-4 bg-[var(--tomoi-white)] shadow-sm/40 rounded-xl px-6 flex items-center'>
+                                <div className='row-span-4 bg-[var(--tomoi-white)] outline-2 outline-dashed rounded-xl px-6 flex items-center'>
                                     <div className='w-full h-full px-4 py-8 flex flex-col item-center justify-center'>
                                         <div className='text-3xl text-left font-bold'>Recent entries data</div>
                                         <div className='grow'>
@@ -465,7 +525,7 @@ function Stats() {
                                     </div>
                                 </div>
 
-                                <div className='relative row-span-1 bg-[var(--tomoi-gray)] overflow-hidden shadow-sm/30 rounded-xl p-6 flex gap-3 items-center'>
+                                <div className='relative row-span-1 bg-[var(--tomoi-white)] outline-2 outline-dashed overflow-hidden rounded-xl p-6 flex gap-3 items-center'>
                                     <div className='flex z-10 flex-col items-end leading-none grow'>
                                         <div className='text-3xl text font-bold leading-none'>{wordStats?.total_words}</div>
                                         <div className='text-lg leading-none'>Total words</div>
@@ -477,8 +537,9 @@ function Stats() {
                                     <Alphabet className="z-1 opacity-30 absolute w-[10em] h-[10em] font-bold left-1 leading-none top-0 fill-[var(--tomoi-gray-d)]"/>
                                 </div>
 
-                                <div className='relative bg-[var(--tomoi-gray)] overflow-hidden shadow-sm/30 rounded-xl p-6 flex gap-3 items-center'>
+                                <div className='relative bg-[var(--tomoi-gray)] overflow-hidden outline-2 outline-dashed rounded-xl p-6 flex gap-3 items-center'>
                                     <div className='w-full flex flex-col gap-2'>
+                                        <div className='text-lg leading-none text-left ml-1'>Longest entry</div>
                                         <div className='flex flex-col items-center justify-between bg-[var(--tomoi-white)] z-10 w-full gap-1 rounded-xl p-4 leading-none grow-2'>
                                             <div className='flex justify-between w-full'>
                                                 <div className='flex flex-col items-start gap-1'>
@@ -495,11 +556,10 @@ function Stats() {
                                                 </div>
                                             </div>
                                         </div>
-                                        <div className='text-lg leading-none text-left'>Longest entry</div>
                                     </div>
                                 </div>
 
-                                <div className='relative bg-[var(--tomoi-white)] overflow-hidden shadow-sm/30 rounded-xl p-6 flex gap-3 items-center'>
+                                <div className='relative bg-[var(--tomoi-white)] overflow-hidden outline-2 outline-dashed rounded-xl p-6 flex gap-3 items-center'>
                                     <div className='flex flex-col leading-none grow z-10'>
                                         <div className='text-3xl font-bold leading-none'>{streakStats?.bestStreak} days</div>
                                         <div className='text-lg leading-none'>Best writing streak</div>
@@ -512,7 +572,7 @@ function Stats() {
                                     
                                 </div>
 
-                                <div className='row-span-3 bg-[var(--tomoi-white)] shadow-sm/40 rounded-xl px-6 flex items-center'>
+                                <div className='row-span-3 bg-[var(--tomoi-white)] outline-2 outline-dashed rounded-xl px-6 flex items-center'>
                                     <div className='w-full h-full px-4 py-8 flex flex-col'>
                                         <div className='text-3xl font-bold'>Feeling distribution</div>
                                         <div className='grow'>
@@ -521,7 +581,7 @@ function Stats() {
                                     </div>
                                 </div>
 
-                                <div className='relative bg-[var(--tomoi-yellow-l)] shadow-sm/30 overflow-hidden rounded-xl p-6 flex gap-3 items-center'
+                                <div className='relative bg-[var(--tomoi-yellow-l)] outline-2 outline-dashed overflow-hidden rounded-xl p-6 flex gap-3 items-center'
                                     style={{"backgroundColor" : feelingInterpretationMap[mostUsedFeeling?.feeling]?.[1]}}>
                                     <div className='flex z-10 flex-col items-start leading-none grow'>
                                         <div className='text-lg leading-none'>My most used feeling was...</div>
@@ -534,7 +594,7 @@ function Stats() {
                                         style={{"fill" : feelingInterpretationMap[mostUsedFeeling?.feeling]?.[2]}}/>
                                 </div>
 
-                                <div className='relative bg-[var(--tomoi-yellow)] overflow-hidden shadow-sm/30 rounded-xl p-6 flex gap-3 items-center'>
+                                <div className='relative bg-[var(--tomoi-yellow)] overflow-hidden outline-2 outline-dashed rounded-xl p-6 flex gap-3 items-center'>
                                     <div className='flex z-10 flex-col items-end leading-none grow'>
                                         <div className='text-3xl text font-bold leading-none'>{happiestMonth?.month}</div>
                                         <div className='text-lg leading-none'>was my happiest month.</div>
@@ -546,7 +606,7 @@ function Stats() {
                                     <EmojiSmileFill className="z-1 -rotate-15 absolute w-[8em] h-[8em] font-bold left-1 leading-none top-0 fill-[var(--tomoi-yellow-l)]"/>
                                 </div>
 
-                                <div className='relative bg-[var(--tomoi-blue)] overflow-hidden shadow-sm/30 rounded-xl p-6 flex gap-3 items-center'>
+                                <div className='relative bg-[var(--tomoi-blue)] overflow-hidden outline-2 outline-dashed rounded-xl p-6 flex gap-3 items-center'>
                                     <div className='flex flex-col leading-none grow z-10'>
                                         <div className='text-3xl font-bold leading-none'>{saddestMonth?.month}</div>
                                         <div className='text-lg leading-none'>was my saddest month.</div>
@@ -559,11 +619,18 @@ function Stats() {
                                     
                                 </div>
 
-                                <div className='bg-[var(--tomoi-gray)] col-span-2 rounded-xl p-3 shadow-sm/30'> 
+                                <div className='bg-[var(--tomoi-gray)] col-span-2 rounded-xl p-3 outline-2 outline-dashed'> 
                                     <div className='relative bg-[var(--tomoi-white)] overflow-hidden rounded-xl p-6 flex gap-3 items-center'>
-                                        <div className='flex flex-col leading-none grow z-10'>
+                                        <div className='flex flex-col leading-none grow gap-2 z-10'>
                                             <div className='text-lg leading-none'>My most used tags</div>
-                                            <div className='text-3xl font-bold leading-none'>boompala</div>
+                                            <div ref={tagsContainerRef} className='flex w-full overflow-hidden gap-2'>
+                                                {topTags?.map((tag, index) => (
+                                                    <div key={index} className='tags text-2xl border-1 flex items-stretch justify-center divide-x-1 divide-dashed border-dashed border-[var(--tomoi-gray-d)] bg-[var(--tomoi-gray-l)] w-fit' style={{opacity: 0}}>
+                                                        <div className='flex px-2' >{tag.tagName}</div>
+                                                        <div className='flex items-center text-sm px-2 bg-[var(--tomoi-white)] text-[var(--tomoi-gray-d)]'>x{tag.use_count}</div>
+                                                    </div>
+                                                ))}
+                                            </div>
                                         </div>
                                         <TagFill className="z-1 rotate-65 absolute w-[8em] h-[8em] right-1 top-0 fill-[var(--tomoi-gray-l)]" />
                                     </div>
