@@ -786,9 +786,9 @@ app.get('/get-total-entry-count', (req, res) => {
 });
 
 app.get('/get-journaling-duration', (req, res) => {
-    const { userID } = req.query;
-    const query = `SELECT DATEDIFF(NOW(), MIN(dateCreated)) AS duration_days FROM posts WHERE author = ?;`
-    db.query(query, [toBinaryUUID(userID)], (err, result) => {
+    const { userDate, userID } = req.query;
+    const query = `SELECT DATEDIFF(DATE_FORMAT(?, '%Y-%m-%d'), DATE_FORMAT(MIN(dateCreated), '%Y-%m-%d')) + 1 AS duration_days FROM posts WHERE author = ?;`
+    db.query(query, [userDate, toBinaryUUID(userID)], (err, result) => {
         if (err) {
             console.error('Error fetching journaling duration', err);
             res.status(500).json({ error: 'Error fetching journaling duration' });
