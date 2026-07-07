@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@tailwind utilities;
 
 html,
 body,
@@ -35,6 +36,17 @@ body,
   --tomoi-cyan-l: #88f0fe;
   --tomoi-navy-l: #768bda;
   --tomoi-navy: #1c2262;
+}
+
+@layer utilities {
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+  
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
 }
 
 .default-font {

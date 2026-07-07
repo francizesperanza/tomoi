@@ -460,6 +460,25 @@ function Stats() {
         setFilterAnchorEl(null);
     }
 
+    const containerRef = useRef(null);
+
+    useEffect(() => {
+    const container = tagsContainerRef.current;
+
+    const handleWheel = (e) => {
+        e.preventDefault();
+        container.scrollLeft += e.deltaY;
+    };
+
+    container.addEventListener("wheel", handleWheel, {
+        passive: false,
+    });
+
+    return () => {
+        container.removeEventListener("wheel", handleWheel);
+    };
+    }, []);
+
     useEffect(() => {
         if (!topTags || topTags.length === 0 || !tagsContainerRef.current) {
             return;
@@ -631,9 +650,10 @@ function Stats() {
 
                                                 {
                                                     topTags?.length > 0 ?
-                                                    <div ref={tagsContainerRef} className='flex w-full overflow-hidden gap-2'>
+                                                    <div ref={tagsContainerRef} className='flex w-[75%] overflow-hidden gap-2 scrollbar-hide'
+                                                    >
                                                         {topTags?.map((tag, index) => (
-                                                            <div key={index} className='tags text-2xl border-1 flex items-stretch justify-center divide-x-1 divide-dashed border-dashed border-[var(--tomoi-gray-d)] bg-[var(--tomoi-gray-l)] w-fit' style={{opacity: 0}}>
+                                                            <div key={index} className='tags select-none text-2xl border-1 flex items-stretch justify-center divide-x-1 divide-dashed border-dashed border-[var(--tomoi-gray-d)] bg-[var(--tomoi-gray-l)] w-fit' style={{opacity: 0}}>
                                                                 <div className='flex px-2' >{tag.tagName}</div>
                                                                 <div className='flex items-center text-sm px-2 bg-[var(--tomoi-white)] text-[var(--tomoi-gray-d)]'>x{tag.use_count}</div>
                                                             </div>

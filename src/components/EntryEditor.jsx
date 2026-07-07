@@ -308,6 +308,7 @@ function EntryEditor({isOpen, onClose, mode}) {
                     })
                     const data = await response.data;
                     toast.success(data.message);
+                    queryClient.invalidateQueries({queryKey: ['entries']})
                     await refreshEntries();
                 } catch (err) {
                     console.error('Error updating entry:', err);

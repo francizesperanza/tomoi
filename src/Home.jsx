@@ -225,7 +225,7 @@ const getLastActivityEntry = async(user) => {
                                                     })
                                                 }
                                                 {
-                                                    lastActivityEntry.tags?.length > 3 && <div className='text-xs bg-[var(--tomoi-gray-l)] rounded-full px-2 py-1'>+{entry.tags.length - 3}</div>
+                                                    lastActivityEntry.tags?.length > 3 && <div className='text-xs bg-[var(--tomoi-gray-l)] rounded-full px-2 py-1'>+{lastActivityEntry.tags.length - 3}</div>
                                                 }
                                             </div>
                                             {
