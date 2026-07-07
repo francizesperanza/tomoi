@@ -521,8 +521,8 @@ function Stats() {
                                         <JournalIcon className="rotate-15 absolute w-[8em] z-1 right-1 mt-20 fill-[var(--tomoi-gray)]" />
                                     </div>
                                     
-                                    <div className='row-span-4 bg-[var(--tomoi-white)] outline-2 outline-dashed rounded-xl px-6 flex items-center'>
-                                        <div className='w-full h-full px-4 py-8 flex flex-col item-center justify-center'>
+                                    <div className='row-span-4 bg-[var(--tomoi-white)] outline-2 outline-dashed rounded-xl px-4 py-6 flex items-center'>
+                                        <div className='w-full h-full px-4 flex flex-col item-center justify-center'>
                                             <div className='text-3xl text-left font-bold'>Recent entries data</div>
                                             <div className='grow'>
                                                 <Bar options={entryChartOptions} data={entryChartDataFormatted}/>
@@ -577,8 +577,8 @@ function Stats() {
                                         
                                     </div>
 
-                                    <div className='row-span-3 bg-[var(--tomoi-white)] outline-2 outline-dashed rounded-xl px-6 flex items-center'>
-                                        <div className='w-full h-full px-4 py-8 flex flex-col'>
+                                    <div className='row-span-3 bg-[var(--tomoi-white)] outline-2 outline-dashed rounded-xl px-4 py-6 flex items-center'>
+                                        <div className='w-full px-4 h-full flex flex-col'>
                                             <div className='text-3xl font-bold'>Feeling distribution</div>
                                             <div className='grow'>
                                                 <Doughnut options={feelingChartOptions} data={feelingChartDataFormatted}/>
