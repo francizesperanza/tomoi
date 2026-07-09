@@ -95,7 +95,6 @@ function TomoiCalendar() {
 
     const selectCurrentMonthDay = (day) => {
         const selectedDate = currentDate.date(day);
-        console.log(selectedDate)
         setSelectedDate(selectedDate);
         setCurrentDate(selectedDate);
     }

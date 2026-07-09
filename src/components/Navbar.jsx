@@ -6,9 +6,10 @@ import { toast} from 'react-hot-toast'
 import { useAuth } from './AuthProvider'
 import { animate, stagger, createScope, createTimer, set, random, createTimeline} from 'animejs'
 import { LogOutIcon } from 'lucide-react';
+import axios from 'axios'
 
 function Navbar() {
-  const {user} = useAuth();
+  const {user, setUser} = useAuth();
   const navigate = useNavigate();
   const [isNavOpen, setIsNavOpen] = useState(false);
   const [accSettingsAnchorEl, setAccSettingsAnchorEl] = useState(null);
@@ -100,6 +101,24 @@ function Navbar() {
 
   }
 
+  const logout = async() => {
+    if (!user)
+        return
+
+    try {
+        const userID = user.userID
+
+        const API_URL = import.meta.env.VITE_API_URL
+        const response = await axios.get(`${API_URL}/logout-user`)
+    } catch (err) {
+        console.error('Error logging out:', err);
+    } finally {
+        setUser(null)
+        console.log(user)
+        navigate('/login')
+    }
+  }
+
   useEffect (() => {
     const navPref = localStorage.getItem('navPref');
     if (navPref){
@@ -174,12 +193,12 @@ function Navbar() {
             },
         }}
     >
-        <div className='flex w-full flex-col divide-y-2 divide-dashed'>
+        <div className='flex w-full flex-col divide-y-2 divide-dashed select-none cursor-pointer'>
             <div onMouseEnter={onButtonHover} onMouseLeave={onButtonLeave} className='option px-4 py-2 hover:font-bold flex gap-10 items-center justify-between overflow-hidden'>
                 <div className='z-10'>Account Settings</div>
                 <GearFill className='icon z-1 fill-[var(--tomoi-gray-d)] w-[1em]'></GearFill>
             </div>
-            <div onMouseEnter={onButtonHover} onMouseLeave={onButtonLeave} onClick={() => {onHandleDelete(); closePopover()}} className='option px-4 py-2 text-[var(--tomoi-red)] hover:font-bold flex items-center justify-between overflow-hidden'>
+            <div onMouseEnter={onButtonHover} onMouseLeave={onButtonLeave} onClick={() => {logout()}} className='option px-4 py-2 text-[var(--tomoi-red)] hover:font-bold flex items-center justify-between overflow-hidden'>
                 <div className='z-10'>Logout</div>
                 <LogOutIcon className='icon w-[1em]'></LogOutIcon>
             </div>

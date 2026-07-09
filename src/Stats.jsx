@@ -463,21 +463,23 @@ function Stats() {
     const containerRef = useRef(null);
 
     useEffect(() => {
-    const container = tagsContainerRef.current;
+        const container = tagsContainerRef.current;
+        
+        if (!container) return
 
-    const handleWheel = (e) => {
-        e.preventDefault();
-        container.scrollLeft += e.deltaY;
-    };
+        const handleWheel = (e) => {
+            e.preventDefault();
+            container.scrollLeft += e.deltaY;
+        };
 
-    container.addEventListener("wheel", handleWheel, {
-        passive: false,
-    });
+        container.addEventListener("wheel", handleWheel, {
+            passive: false,
+        });
 
-    return () => {
-        container.removeEventListener("wheel", handleWheel);
-    };
-    }, []);
+        return () => {
+            container.removeEventListener("wheel", handleWheel);
+        };
+    }, [tagsContainerRef]);
 
     useEffect(() => {
         if (!topTags || topTags.length === 0 || !tagsContainerRef.current) {

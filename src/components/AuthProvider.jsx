@@ -25,7 +25,7 @@ function AuthProvider ({children}) {
                 setLoading(false);
             }
         }
-
+        
         checkSession();
     }, []);
 

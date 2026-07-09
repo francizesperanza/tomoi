@@ -46,7 +46,9 @@ const db = mysql.createConnection({
     user: process.env.DB_USER,
     password: process.env.DB_PASSWORD,
     database: process.env.DB_NAME,
-    port: process.env.DB_PORT
+    port: process.env.DB_PORT,
+    timezone: "+08:00",
+    dateStrings: true
 });
 
 const sortQueryMap = {
@@ -136,6 +138,11 @@ app.post('/login-user', (req, res) => {
         }
     });
 });
+
+app.get('/logout-user', (req, res) => {
+    req.session.user = null
+    res.status(200).json({message: 'Logout successful'})
+})
 
 app.get('/check-username', (req, res) => {
     const { username } = req.query;
