@@ -344,8 +344,8 @@ function EntryEditor({isOpen, onClose, mode}) {
                 <LoadingComponent></LoadingComponent>
             </div>}
             <Modal isOpen={isOpen} onClose={handleSave}>
-                <div className='relative min-h-[65vh] flex flex-col gap-2 justify-center items-center'>
-                    <div className='absolute -top-4 right-0 text-xs italic text-[var(--tomoi-gray-d)]'>It will autosave when you close it.</div>
+                <div className='relative min-h-[65vh] px-20 py-10 flex flex-col gap-2 justify-center items-center'>
+                    <div className='absolute top-5 right-5 text-xs italic text-[var(--tomoi-gray-d)]'>It will autosave when you close it.</div>
                     <textarea value={title} placeholder='Entry Title' className='resize-none outline-none overflow-hidden p-1 border-b-1 border-[var(--tomoi-gray)] text-5xl flex font-bold w-full field-sizing-content'
                     onChange={(e) => setTitle(e.target.value)}></textarea>
                     <div className='italic text-[var(--tomoi-gray-d)] flex justify-between w-full'>

@@ -6,6 +6,7 @@ import { toast} from 'react-hot-toast'
 import { useAuth } from './AuthProvider'
 import { animate, stagger, createScope, createTimer, set, random, createTimeline} from 'animejs'
 import { LogOutIcon } from 'lucide-react';
+import AccountSettings from './AccountSettings';
 import axios from 'axios'
 
 function Navbar() {
@@ -13,6 +14,7 @@ function Navbar() {
   const navigate = useNavigate();
   const [isNavOpen, setIsNavOpen] = useState(false);
   const [accSettingsAnchorEl, setAccSettingsAnchorEl] = useState(null);
+  const [isAccSettingsOpen, setIsAccSettingsOpen] = useState(false);
   
   const accSettingsOpen = Boolean(accSettingsAnchorEl);
   const accSettingsOpenId = open ? 'acc-settings-popover' : undefined;
@@ -163,6 +165,8 @@ function Navbar() {
         </div>
       </div>
 
+      <AccountSettings isOpen={isAccSettingsOpen} onClose={() => setIsAccSettingsOpen(false)}></AccountSettings>
+
       <Popover
         id={accSettingsOpenId}
         open={accSettingsOpen}
@@ -180,6 +184,7 @@ function Navbar() {
         slotProps={{
             paper: {
                 sx: {
+                    width: '13%',
                     backgroundColor: 'var(--tomoi-white)',
                     border: '2px dashed black',
                     borderRadius: '8px',
@@ -188,13 +193,13 @@ function Navbar() {
                     justifyContent: 'center',
                     alignItems: 'center',
                     boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.2), 0 2px 4px -2px rgb(0 0 0 / 0.2)",
-                    overflow: "visible"
+                    overflow: "hidden"
                 },
             },
         }}
     >
         <div className='flex w-full flex-col divide-y-2 divide-dashed select-none cursor-pointer'>
-            <div onMouseEnter={onButtonHover} onMouseLeave={onButtonLeave} className='option px-4 py-2 hover:font-bold flex gap-10 items-center justify-between overflow-hidden'>
+            <div onMouseEnter={onButtonHover} onMouseLeave={onButtonLeave} onClick={() => {setIsAccSettingsOpen(true); closeAccSettingsPopover()}} className='option px-4 py-2 hover:font-bold flex items-center justify-between overflow-hidden'>
                 <div className='z-10'>Account Settings</div>
                 <GearFill className='icon z-1 fill-[var(--tomoi-gray-d)] w-[1em]'></GearFill>
             </div>
