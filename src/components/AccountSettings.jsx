@@ -260,12 +260,18 @@ function AccountSettings({isOpen, onClose}) {
                                 
                             </div>
                                 :
-                            <div className='bg-[var(--tomoi-gray)] w-[50%] aspect-square flex flex-col items-center justify-center gap-2 m-2'>
+                            <div className='relative bg-[var(--tomoi-gray)] w-[50%] aspect-square flex flex-col items-center justify-center gap-2 m-2'>
+                                {
+                                    imageLoading &&
+                                    <div className='loading absolute rounded-xl inset-0 items-center justify-center flex bg-[var(--tomoi-yellow-l)]/50 z-100 text-2xl font-extrabold'>
+                                        <LoadingComponent/>
+                                    </div>
+                                }
                                 <div className='text-sm flex items-center justify-center flex-col text-[var(--tomoi-gray-d)]'>
                                     <div> No profile picture yet.</div>
                                     <div> Maximum size: 8MB</div>
                                 </div>
-                                <button className='styling-btn rounded-xl shadow-sm/30 flex items-center gap-2 bg-[var(--tomoi-white)]' onClick={() => triggerFileUpload()}>
+                                <button className='px-4 py-2 rounded-xl border-2 border-dashed hover:bg-[var(--tomoi-gray-d)] flex items-center gap-2 bg-[var(--tomoi-white)]' onClick={() => triggerFileUpload()}>
                                     <CardImage></CardImage> Upload Image
                                     <input
                                     ref={fileUploadRef}
