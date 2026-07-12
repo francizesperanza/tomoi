@@ -8,14 +8,18 @@ import { Link, useNavigate} from 'react-router-dom'
 import { Person } from 'react-bootstrap-icons';
 
 function AccountSettings({isOpen, onClose}) {
-    const {user} = useAuth()
+    const {user, setUser} = useAuth()
     const [username, setUsername] = useState(user.username)
+    const [newPassword, setNewPassword] = useState(user.password)
     const [password, setPassword] = useState(user.password)
     const [confirmPassword, setConfirmPassword] = useState('')
     const [profilePic, setProfilePic] = useState("")
 
     const [usernameAvailable, setUsernameAvailable] = useState(false)
     const [usernameChanged, setUsernameChanged] = useState(false)
+
+    const [newPasswordChanged, setNewPasswordChanged] = useState(false)
+    const [isNewPasswordVisible, setIsNewPasswordVisible] = useState(false)
 
     const [passwordChanged, setPasswordChanged] = useState(false)
     const [isPasswordVisible, setIsPasswordVisible] = useState(false)
@@ -36,8 +40,20 @@ function AccountSettings({isOpen, onClose}) {
     const isPasswordMatch = () => {
         return password === confirmPassword;
     }
+    
+    useEffect(() => {
+        clearFields()
+    }, [isOpen])
+
+    const clearFields = () => {
+        setUsername("")
+        setNewPassword("")
+        setPassword("")
+        setConfirmPassword("")
+    }
 
     const usernameValid = checkUsernameValidity(username) && usernameAvailable;
+    const newPasswordValid = checkPasswordValidity(newPassword);
     const passwordValid = checkPasswordValidity(password);
     const confirmPasswordValid = isPasswordMatch();
 
@@ -84,6 +100,20 @@ function AccountSettings({isOpen, onClose}) {
         }
     }
 
+    const generateNewPasswordErrorMessage = () => {
+        if (!newPasswordChanged)
+            return '';
+
+        if (newPassword.length === 0)
+            return ''
+
+        if (!checkPasswordValidity(newPassword)) {
+            return 'Password must be 8-100 characters long and contain at least one uppercase letter, one lowercase letter, one number, and one special character (@$!%*?&).';
+        } else {
+            return 'Password is valid.';
+        }
+    }
+
     const generateConfirmPasswordErrorMessage = () => {
         if (!confirmPasswordChanged)
             return '';
@@ -99,18 +129,45 @@ function AccountSettings({isOpen, onClose}) {
 
     const handleChangeSettings = async (e) => {
         e.preventDefault()
+        console.log(username)
 
         if (!confirmPasswordValid) {
             toast.error('Passwords do not match!');
             return;
-        } else if (!usernameValid) {
+        } else if (!usernameValid && username.length != 0) {
             toast.error('Please enter a valid username!');
             return;
-        } else if (!passwordValid) {
+        } else if (!newPasswordValid && newPassword.length != 0) {
             toast.error('Please enter a valid password!');
             return;
         } else {
-            toast.success('You can change!')
+            try {
+                const userID = user.userID
+
+                const API_URL = import.meta.env.VITE_API_URL
+                const response = await axios.put(`${API_URL}/change-account-details`, {
+                    userID: userID,
+                    newUsername: username,
+                    newPassword: newPassword,
+                    password: password
+                })
+
+                if (response.status === 200){
+                    toast.success(response.data.message)
+                    if (username.length != 0)
+                        setUser(prev => ({
+                            ...prev,
+                            username: username
+                        }))
+                    
+                    clearFields()
+                }
+            } catch (err) {
+                if (err.response)
+                    toast.error(err.response.data.error);
+                else
+                    console.error('Error changing account details:', err);
+            }
         }
     }
 
@@ -133,7 +190,7 @@ function AccountSettings({isOpen, onClose}) {
                                 <div className='flex font-black w-full items-center'>
                                     <label className='' htmlFor="username">Username</label>
                                 </div>
-                                <input autoComplete="off" placeholder={user.username} className='w-full rounded-xl bg-[var(--tomoi-gray)] py-2 px-4' type="text" id="username" name="username" onChange={(e) => {
+                                <input autoComplete="off" value={username} placeholder={user.username} className='w-full rounded-xl bg-[var(--tomoi-gray)] py-2 px-4' type="text" id="username" name="username" onChange={(e) => {
                                     setUsernameChanged(true);
                                     setUsername(e.target.value);
                                     checkUsernameAvailability(e.target.value);
@@ -145,10 +202,29 @@ function AccountSettings({isOpen, onClose}) {
 
                             <div className='flex flex-col items-center justify-center w-full gap-1'>
                                 <div className='flex items-center font-black w-full'>
+                                    <label className='' htmlFor="password">New Password</label>
+                                </div>
+                                <div className='flex items-stretch w-full'>
+                                    <input autoComplete="new-password" value={newPassword} className='w-full rounded-s-lg bg-[var(--tomoi-gray)] py-2 px-4' type={isNewPasswordVisible ? "text" : "password"} id="password" name="password" onChange={(e) => {
+                                        setNewPasswordChanged(true);
+                                        setNewPassword(e.target.value);
+                                        checkPasswordValidity(e.target.value);
+                                    }} />
+                                    <button dir='rtl' className='border-dashed border-2 rounded-s-lg flex w-[20%] items-center justify-center cursor-pointer bg-[var(--tomoi-yellow-l)] hover:bg-[var(--tomoi-yellow)]' type='button' onClick={() => setIsNewPasswordVisible(prev => !prev)}>
+                                        {isNewPasswordVisible ? <EyeIcon className='' width={20} height={20} /> : <EyeClosed className='' width={20} height={20} />}
+                                    </button>
+                                </div>
+                                <div className={'text-sm w-full' + (checkPasswordValidity(newPassword) ? ' text-green-500' : ' text-red-500')}>
+                                    {generateNewPasswordErrorMessage()}
+                                </div>
+                            </div>
+                            <div className='text-left w-full italic text-[var(--tomoi-gray-d)]'>To confirm changes, input current your password.</div>
+                            <div className='flex flex-col items-center justify-center w-full gap-1'>
+                                <div className='flex items-center font-black w-full'>
                                     <label className='' htmlFor="password">Password</label>
                                 </div>
                                 <div className='flex items-stretch w-full'>
-                                    <input autoComplete="new-password" className='w-full rounded-s-lg bg-[var(--tomoi-gray)] py-2 px-4' type={isPasswordVisible ? "text" : "password"} id="password" name="password" onChange={(e) => {
+                                    <input required value={password} autoComplete="new-password" className='w-full rounded-s-lg bg-[var(--tomoi-gray)] py-2 px-4' type={isPasswordVisible ? "text" : "password"} id="password" name="password" onChange={(e) => {
                                         setPasswordChanged(true);
                                         setPassword(e.target.value);
                                         checkPasswordValidity(e.target.value);
@@ -157,16 +233,13 @@ function AccountSettings({isOpen, onClose}) {
                                         {isPasswordVisible ? <EyeIcon className='' width={20} height={20} /> : <EyeClosed className='' width={20} height={20} />}
                                     </button>
                                 </div>
-                                <div className={'text-sm w-full' + (checkPasswordValidity(password) ? ' text-green-500' : ' text-red-500')}>
-                                    {generatePasswordErrorMessage()}
-                                </div>
                             </div>
 
                             <div className='flex flex-col items-center justify-center w-full gap-1'>
                                 <div className='flex items-center font-black w-full'>
                                     <label className='' htmlFor="confirmPassword">Confirm Password</label>
                                 </div>
-                                <input required autoComplete="new-password" className='w-full rounded-xl bg-[var(--tomoi-gray)] border-black py-2 px-4' type="password" id="confirmPassword" name="confirmPassword" onChange={(e) => {
+                                <input required autoComplete="new-password" value={confirmPassword} className='w-full rounded-xl bg-[var(--tomoi-gray)] border-black py-2 px-4' type="password" id="confirmPassword" name="confirmPassword" onChange={(e) => {
                                     setConfirmPasswordChanged(true);
                                     setConfirmPassword(e.target.value);
                                 }}/>
@@ -175,11 +248,9 @@ function AccountSettings({isOpen, onClose}) {
                                 </div>
                             </div>
                             <div className='flex flex-col items-center justify-center w-full gap-2 mt-20'>
-                                <Link to="/login" className='w-full'>
-                                    <button className='flex flex-row gap-3 items-center justify-center w-full bg-[var(--tomoi-yellow-l)] hover:bg-[var(--tomoi-yellow-d)] rounded-full py-2 px-4 font-bold shadow-sm/30 outline-2 outline-dashed' type="button">
-                                        Save Settings
-                                    </button>
-                                </Link>
+                                <button type="submit" className='flex flex-row gap-3 items-center justify-center w-full bg-[var(--tomoi-yellow-l)] hover:bg-[var(--tomoi-yellow-d)] rounded-full py-2 px-4 font-bold shadow-sm/30 outline-2 outline-dashed'>
+                                    Save Settings
+                                </button>
                             </div>
                         </form>
                     </div>

@@ -172,6 +172,73 @@ app.get('/check-email', (req, res) => {
     });
 });
 
+app.put('/change-account-details', (req, res) => {
+    const { userID, newUsername, newPassword, password} = req.body;
+
+    if (!usernameRegex.test(newUsername) && newUsername.length != 0 ||
+        !passwordRegex.test(newPassword) && newPassword.length != 0) {
+        res.status(400).json({ error: 'Invalid username or password format' });
+        return;
+    }
+
+    const values = []
+    var hashedPassword
+
+    if (newPassword.length != 0)
+        hashedPassword = bcrypt.hashSync(newPassword, saltRounds);
+
+    const chooseQuery = () => {
+        var query
+
+        if (newPassword.length == 0 ){
+            values.push(newUsername)
+            query = 'username = ?'
+        } else if (newUsername.length == 0){
+            values.push(hashedPassword)
+            query = 'password = ?'
+        } else {
+            values.push(newUsername, hashedPassword)
+            query = 'username = ?, password = ?'
+        }
+
+        values.push(toBinaryUUID(userID))
+        
+        return query
+    }
+
+    const query = 'SELECT * FROM users WHERE userID = ?';
+    db.query(query, [toBinaryUUID(userID)], (err, result) => {
+        if (err) {
+            res.status(500).json({ error: 'Error changing account details' });
+        } else {
+            if (result.length > 0) {
+                bcrypt.compare(password, result[0].password, (err, isMatch) => {
+                    if (err) {
+                        res.status(500).json({ error: 'Error changing account details' });
+                    } else if (isMatch) {
+                        const queryOption = chooseQuery()
+                        
+                        const changeDetailsQuery = `UPDATE users SET ${queryOption} WHERE userID = ?`;
+                        db.query(changeDetailsQuery, values, (err, changeRes) => {
+                            if (err) {
+                                console.error('Error changing account details:', err);
+                                res.status(500).json({ error: 'Error changing account details' });
+                            } else {
+                                req.session.user = { userID: fromBinaryUUID(result[0].userID), username: newUsername.length == 0 ? result[0].username : newUsername, email: result[0].email };
+                                res.status(200).json({ message: 'Account details change successful!'});
+                            }
+                        })
+                    } else {
+                        res.status(401).json({ error: 'Invalid password' });
+                    }
+                });
+            } else {
+                res.status(401).json({ error: 'Invalid password' });
+            }
+        }
+    });
+});
+
 // AUTHENTICATION
 
 app.get('/session-check', (req, res) => {
@@ -670,7 +737,6 @@ app.get('/get-latest-entry', (req, res) => {
 
 app.get('/get-last-edited-entry', (req, res) => {
     const {userID} = req.query;
-
     const query = `SELECT
                         p.*,
                         c.*,
