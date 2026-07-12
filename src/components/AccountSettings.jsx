@@ -1,11 +1,13 @@
 import {useRef, useState, useEffect, useMemo} from 'react'
 import axios from 'axios'
 import Modal from './Modal';
+import { useUploadThing } from '../utils/uploadthing';
 import { useAuth } from './AuthProvider'
 import { EyeIcon, EyeClosed} from 'lucide-react'
 import { toast} from 'react-hot-toast'
 import { Link, useNavigate} from 'react-router-dom'
-import { Person } from 'react-bootstrap-icons';
+import { Person, CardImage } from 'react-bootstrap-icons';
+import LoadingComponent from './LoadingComponent';
 
 function AccountSettings({isOpen, onClose}) {
     const {user, setUser} = useAuth()
@@ -14,7 +16,8 @@ function AccountSettings({isOpen, onClose}) {
     const [password, setPassword] = useState(user.password)
     const [confirmPassword, setConfirmPassword] = useState('')
     const [profilePic, setProfilePic] = useState("")
-
+    const [imageLoading, setImageLoading] = useState(false)
+    const maxImageSize = 8;
     const [usernameAvailable, setUsernameAvailable] = useState(false)
     const [usernameChanged, setUsernameChanged] = useState(false)
 
@@ -28,6 +31,9 @@ function AccountSettings({isOpen, onClose}) {
 
     const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
     const usernameRegex = /^[a-zA-Z0-9_]{5,20}$/;
+
+    const { startUpload } = useUploadThing("imageUploader");
+    const fileUploadRef = useRef(null)
 
     const checkUsernameValidity = (username) => {
         return usernameRegex.test(username);
@@ -171,6 +177,45 @@ function AccountSettings({isOpen, onClose}) {
         }
     }
 
+    const handleImageUpload = async (file) => {
+        
+        setImageLoading(true)
+        const result = await startUpload([file]);
+
+        if (!result?.length) return;
+
+        try 
+        {
+            const userID = user.userID
+
+            const API_URL = import.meta.env.VITE_API_URL
+            const response = await axios.put(`${API_URL}/change-profile-picture`, {
+                userID: userID,
+                profilePic: result[0].ufsUrl
+            })
+
+            if (response.status === 200){
+                toast.success(response.data.message)
+                setUser(prev => ({
+                    ...prev,
+                    profilePic: result[0].ufsUrl
+                }))
+            }
+        } catch (err) {
+            if (err.response)
+                toast.error(err.response.data.error);
+            else
+                console.error('Error changing profile picture:', err);
+        } finally {
+            setImageLoading(false)
+        }
+
+    };
+
+    const triggerFileUpload = () => {
+        fileUploadRef.current?.click()
+    }
+
 
     return (
         <>
@@ -183,6 +228,57 @@ function AccountSettings({isOpen, onClose}) {
                         </div>
                     </div>
                     <div className='bg-[var(--tomoi-white)] overflow-y-auto border-l-2 border-dashed border-[var(--tomoi-gray-d)] gap-2 flex flex-col px-10 py-10 rounded-rt-xl w-[70%]'>
+                        <div className='text-3xl font-bold'>Change profile picture</div>
+                        <div className='border-t-2 border-dashed'/>
+                        {
+                            user.profilePic ?
+                            <div className='relative flex justify-center gap-2 items-center py-3'>
+                                {
+                                    imageLoading &&
+                                    <div className='loading absolute rounded-xl inset-0 items-center justify-center flex bg-[var(--tomoi-yellow-l)]/50 z-100 text-2xl font-extrabold'>
+                                        <LoadingComponent/>
+                                    </div>
+                                }
+                                <img className='w-24 h-24 object-cover rounded-full' src={user.profilePic} alt='Profile'></img> 
+                                <div className='flex flex-col gap-1 w-full items-center justify-center'>
+                                    <div className='flex items-center justify-center flex-col text-[var(--tomoi-gray-d)]'>Maximum size: {maxImageSize} MB</div>
+                                    <button className='flex flex-row gap-3 items-center justify-center w-full h-fit bg-[var(--tomoi-yellow-l)] hover:bg-[var(--tomoi-yellow-d)] rounded-full py-2 px-4 font-bold shadow-sm/30 outline-2 outline-dashed' onClick={() => triggerFileUpload()}>
+                                        <div className='flex gap-2 items-center'>
+                                            <CardImage></CardImage>
+                                            <div>Change Profile Picture</div>
+                                        </div>
+                                        <input
+                                        ref={fileUploadRef}
+                                        className='hidden'
+                                        type="file"
+                                        accept="image/*"
+                                        onChange={(e) =>
+                                            handleImageUpload(e.target.files[0])
+                                        }/>
+                                    </button>
+                                </div>
+                                
+                            </div>
+                                :
+                            <div className='bg-[var(--tomoi-gray)] w-[50%] aspect-square flex flex-col items-center justify-center gap-2 m-2'>
+                                <div className='text-sm flex items-center justify-center flex-col text-[var(--tomoi-gray-d)]'>
+                                    <div> No profile picture yet.</div>
+                                    <div> Maximum size: 8MB</div>
+                                </div>
+                                <button className='styling-btn rounded-xl shadow-sm/30 flex items-center gap-2 bg-[var(--tomoi-white)]' onClick={() => triggerFileUpload()}>
+                                    <CardImage></CardImage> Upload Image
+                                    <input
+                                    ref={fileUploadRef}
+                                    className='hidden'
+                                    type="file"
+                                    accept="image/*"
+                                    onChange={(e) =>
+                                        handleImageUpload(e.target.files[0])
+                                    }/>
+                                </button>
+                            </div>
+                        }
+                        
                         <div className='text-3xl font-bold'>Change account details</div>
                         <div className='border-t-2 border-dashed'/>
                         <form className='flex flex-col items-center justify-center items-center justify-center w-full gap-5 pt-5' onSubmit={handleChangeSettings}>

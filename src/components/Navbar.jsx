@@ -158,9 +158,9 @@ function Navbar() {
             
           </div>
             
-          <div onClick={(e) => openAccSettingsPopover(e)} className='pointer-events-auto bg-white gap-2 flex rounded-full font-bold text-lg items-center justify-center ml-auto border-dashed border-2 px-4 cursor-pointer hover:bg-[var(--tomoi-gray-d)] shadow-sm/30'>
+          <div onClick={(e) => openAccSettingsPopover(e)} className='group pointer-events-auto bg-white gap-2 flex rounded-full font-bold text-lg items-center justify-center ml-auto border-dashed border-2 px-4 cursor-pointer hover:bg-[var(--tomoi-gray-d)] shadow-sm/30'>
             {user?.username ?? "unnamed"}
-            <PersonCircle width={30} height={30}></PersonCircle>
+            <img className='w-10 h-10 group-hover:brightness-75 object-cover rounded-full' src={user.profilePic} alt='Profile'></img>
           </div>
         </div>
       </div>

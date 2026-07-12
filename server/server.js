@@ -126,7 +126,7 @@ app.post('/login-user', (req, res) => {
                     if (err) {
                         res.status(500).json({ error: 'Error logging in' });
                     } else if (isMatch) {
-                        req.session.user = { userID: fromBinaryUUID(result[0].userID), username: result[0].username, email: result[0].email };
+                        req.session.user = { userID: fromBinaryUUID(result[0].userID), username: result[0].username, email: result[0].email, profilePic: result[0].profilePic };
                         res.status(200).json({ message: 'Login successful', user: req.session.user});
                     } else {
                         res.status(401).json({ error: 'Invalid username or password' });
@@ -224,7 +224,7 @@ app.put('/change-account-details', (req, res) => {
                                 console.error('Error changing account details:', err);
                                 res.status(500).json({ error: 'Error changing account details' });
                             } else {
-                                req.session.user = { userID: fromBinaryUUID(result[0].userID), username: newUsername.length == 0 ? result[0].username : newUsername, email: result[0].email };
+                                req.session.user = { userID: fromBinaryUUID(result[0].userID), username: newUsername.length == 0 ? result[0].username : newUsername, email: result[0].email, profilePic: result[0].profilePic };
                                 res.status(200).json({ message: 'Account details change successful!'});
                             }
                         })
@@ -235,6 +235,20 @@ app.put('/change-account-details', (req, res) => {
             } else {
                 res.status(401).json({ error: 'Invalid password' });
             }
+        }
+    });
+});
+
+app.put('/change-profile-picture', (req, res) => {
+    const { userID, profilePic} = req.body;
+
+    const query = "UPDATE users SET profilePic = ? WHERE userID = ?";
+    db.query(query, [profilePic, toBinaryUUID(userID)], (err, result) => {
+        if (err) {
+            res.status(500).json({ error: 'Error changing account details' });
+        } else {
+            req.session.user = ({...req.session.user, profilePic: profilePic })
+            res.status(200).json({ message: 'Changing profile picture successful!'});
         }
     });
 });
