@@ -3,6 +3,8 @@ import { Google } from 'react-bootstrap-icons'
 import { Link, useNavigate } from 'react-router-dom'
 import { toast} from 'react-hot-toast'
 import { useAuth } from './components/AuthProvider'
+import { GoogleLogin, googleLogout, useGoogleLogin } from '@react-oauth/google';
+import { jwtDecode } from 'jwt-decode';
 
 function Login() {
   const navigate = useNavigate();
@@ -11,6 +13,13 @@ function Login() {
   const [password, setPassword] = useState('')
   const [rememberMe, setRememberMe] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
+  const googleLogin = useGoogleLogin({
+        onSuccess: async (tokenResponse) => {
+            console.log(tokenResponse);
+            toast.log('Login successful!')
+        },
+        onError: () => toast.error('Login failed'),
+    });
 
   const handleLogin = async (e) => {
       e.preventDefault()
@@ -42,6 +51,10 @@ function Login() {
               alert('Error logging in user');
           }
       }
+  }
+
+  const handleGoogleSuccess = (e) => {
+
   }
 
   return (
@@ -83,7 +96,7 @@ function Login() {
             <div className='flex flex-col items-center justify-center w-full gap-2'>
               <button className='w-full bg-[var(--tomoi-green)] hover:bg-[var(--tomoi-green-d)] rounded-full py-2 px-4 font-bold shadow-sm/30 outline-2 outline-dashed' type="submit">Login</button>
               <div>- or -</div>
-              <button className='flex flex-row gap-3 items-center justify-center w-full bg-[var(--tomoi-gray-l)] hover:bg-[var(--tomoi-gray-d)] rounded-full py-2 px-4 font-bold shadow-sm/30 outline-2 outline-dashed' type="button">
+              <button onClick={googleLogin()} className='flex flex-row gap-3 items-center justify-center w-full bg-[var(--tomoi-gray-l)] hover:bg-[var(--tomoi-gray-d)] rounded-full py-2 px-4 font-bold shadow-sm/30 outline-2 outline-dashed' type="button">
                 <Google className='' width={20} height={20} />
                 Login with Google
               </button>

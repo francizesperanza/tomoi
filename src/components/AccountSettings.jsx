@@ -333,7 +333,7 @@ function AccountSettings({isOpen, onClose}) {
                         
                         <div className='text-3xl font-bold'>Change account details</div>
                         <div className='border-t-2 border-dashed'/>
-                        <form className='flex flex-col items-center justify-center items-center justify-center w-full gap-5 pt-5' onSubmit={handleChangeSettings}>
+                        <form autoComplete='off' className='flex flex-col items-center justify-center items-center justify-center w-full gap-5 pt-5' onSubmit={handleChangeSettings}>
                             <div className='flex flex-col items-center justify-center w-full gap-1'>
                                 <div className='flex font-black w-full items-center'>
                                     <label className='' htmlFor="username">Username</label>

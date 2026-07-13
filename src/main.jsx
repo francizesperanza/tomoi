@@ -15,6 +15,7 @@ import Journal from './Journal.jsx'
 import EntryProvider from './components/EntryProvider.jsx'
 import {useAuth} from './components/AuthProvider.jsx'
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
+import { GoogleOAuthProvider } from '@react-oauth/google'
 
 import axios from 'axios';
 
@@ -27,47 +28,50 @@ function DefaultRedirect() {
 
   return <Navigate to={user ? "/home" : "/login"} replace />;
 }
-
+console.log(import.meta.env.VITE_API_URL);
 createRoot(document.getElementById('root')).render(
   <>
-    <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <Router>
-          <Routes>
-            <Route path="/login" element={<Login />} />
-            <Route path="/signup" element={<SignUp />} />
-            <Route
-              element={
-                <EntryProvider>
-                  <Outlet/>
-                </EntryProvider>
-              }
-            >
+    <GoogleOAuthProvider client={import.meta.env.GOOGLE_ID}>
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider>
+          <Router>
+            <Routes>
+              <Route path="/login" element={<Login />} />
+              <Route path="/signup" element={<SignUp />} />
+              <Route
+                element={
+                  <EntryProvider>
+                    <Outlet/>
+                  </EntryProvider>
+                }
+              >
 
-              <Route path="/home" element={
-                <PrivateRoute>
-                  <Home />
-                </PrivateRoute>}/>
-              <Route path="/journal" element={
-                <PrivateRoute>
-                  <Journal/>
-                </PrivateRoute >} />
-              <Route path="/stats" element={
-                <PrivateRoute>
-                  <Stats/>
-                </PrivateRoute>} />
+                <Route path="/home" element={
+                  <PrivateRoute>
+                    <Home />
+                  </PrivateRoute>}/>
+                <Route path="/journal" element={
+                  <PrivateRoute>
+                    <Journal/>
+                  </PrivateRoute >} />
+                <Route path="/stats" element={
+                  <PrivateRoute>
+                    <Stats/>
+                  </PrivateRoute>} />
 
-            </Route>
-            <Route path="/habits" element={<NotAvailable/>} />
-            <Route path="/slambook" element={<NotAvailable/>} />
+              </Route>
+              <Route path="/habits" element={<NotAvailable/>} />
+              <Route path="/slambook" element={<NotAvailable/>} />
 
-            
-            <Route path="*" element={<DefaultRedirect />} />
-          </Routes>
-        </Router>
-      </AuthProvider>
-      <ReactQueryDevtools initialIsOpen={false} />
-    </QueryClientProvider>
+              
+              <Route path="*" element={<DefaultRedirect />} />
+            </Routes>
+          </Router>
+        </AuthProvider>
+        <ReactQueryDevtools initialIsOpen={false} />
+      </QueryClientProvider>
+    </GoogleOAuthProvider>
+    
     
     <Toaster />
   </>
