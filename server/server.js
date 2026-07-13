@@ -16,6 +16,10 @@ const { fromBinaryUUID, toBinaryUUID, createBinaryUUID} = require("binary-uuid")
 const seedPosts = require('./scripts/testing');
 const dayjs = require('dayjs');
 const { uploadthingHandler } = require('./uploadthing');
+const { UTApi } = require("uploadthing/server")
+
+const utapi = new UTApi();
+
 
 const corsOptions = {
     origin: 'http://localhost:5173',
@@ -240,7 +244,17 @@ app.put('/change-account-details', (req, res) => {
 });
 
 app.put('/change-profile-picture', (req, res) => {
-    const { userID, profilePic} = req.body;
+    const { userID, currentProfilePic, profilePic} = req.body;
+    
+    // Delete previous picture
+    if (currentProfilePic) {
+        console.log(currentProfilePic)
+        const key = currentProfilePic.split("/f/")[1];
+
+        utapi.deleteFiles([
+            key
+        ]);
+    }
 
     const query = "UPDATE users SET profilePic = ? WHERE userID = ?";
     db.query(query, [profilePic, toBinaryUUID(userID)], (err, result) => {
@@ -249,6 +263,27 @@ app.put('/change-profile-picture', (req, res) => {
         } else {
             req.session.user = ({...req.session.user, profilePic: profilePic })
             res.status(200).json({ message: 'Changing profile picture successful!'});
+        }
+    });
+});
+
+app.put('/delete-profile-picture', (req, res) => {
+    const { userID, currentProfilePic} = req.body;
+
+    console.log(currentProfilePic)
+    const key = currentProfilePic.split("/f/")[1];
+
+    utapi.deleteFiles([
+        key
+    ]);
+
+    const query = "UPDATE users SET profilePic = NULL WHERE userID = ?";
+    db.query(query, [toBinaryUUID(userID)], (err, result) => {
+        if (err) {
+            res.status(500).json({ error: 'Error deleting account details' });
+        } else {
+            req.session.user = ({...req.session.user, profilePic: null })
+            res.status(200).json({ message: 'Deleting profile picture successful!'});
         }
     });
 });
