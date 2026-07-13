@@ -28,10 +28,11 @@ function DefaultRedirect() {
 
   return <Navigate to={user ? "/home" : "/login"} replace />;
 }
-console.log(import.meta.env.VITE_API_URL);
+const googleClient = import.meta.env.VITE_GOOGLE_CLIENT_ID
+
 createRoot(document.getElementById('root')).render(
   <>
-    <GoogleOAuthProvider client={import.meta.env.GOOGLE_ID}>
+    <GoogleOAuthProvider clientId={googleClient}>
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
           <Router>
