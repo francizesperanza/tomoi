@@ -5,6 +5,7 @@ import { toast} from 'react-hot-toast'
 import { useAuth } from './components/AuthProvider'
 import { GoogleLogin, googleLogout, useGoogleLogin } from '@react-oauth/google';
 import { jwtDecode } from 'jwt-decode';
+import axios from 'axios'
 
 function Login() {
   const navigate = useNavigate();
@@ -15,11 +16,41 @@ function Login() {
   const [errorMessage, setErrorMessage] = useState('')
 
   const googleLogin = useGoogleLogin({
-        onSuccess: async (tokenResponse) => {
-            console.log(tokenResponse);
-            toast.log('Login successful!')
+        flow: "auth-code",
+        onSuccess: async ({code}) => {
+          try {
+
+            toast.success('Google login validated successful!')
+            const API_URL = import.meta.env.VITE_API_URL
+            const response = await axios.post(`${API_URL}/auth/google`, {
+                code
+            }, {
+                withCredentials: true
+            })
+
+            const status = response.data.status
+            console.log(status)
+            if (status === 'local')
+              return navigate('/')
+
+            if (status === 'google')
+              return navigate('/')
+
+            if (status === 'no-username')
+              return navigate('/signup')
+
+          } catch (err) {
+
+            console.error(err);
+
+            if (err.response) {
+                console.error(err.response.status);
+                console.error(err.response.data);
+            }
+          }
+            
         },
-        onError: () => toast.error('Login failed'),
+        onError: () => toast.error('Google login failed'),
   });
 
   const handleLogin = async (e) => {

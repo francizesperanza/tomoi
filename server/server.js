@@ -17,7 +17,12 @@ const seedPosts = require('./scripts/testing');
 const dayjs = require('dayjs');
 const { uploadthingHandler } = require('./uploadthing');
 const { UTApi } = require("uploadthing/server")
-
+const { OAuth2Client } = require("google-auth-library")
+const client = new OAuth2Client({
+    clientId: process.env.GOOGLE_CLIENT_ID,
+    clientSecret: process.env.GOOGLE_SECRET,
+    redirectUri: "postmessage"
+});
 const utapi = new UTApi();
 
 
@@ -98,8 +103,8 @@ app.post('/signup-user', (req, res) => {
     const { username, email, password } = req.body;
     const hashedPassword = bcrypt.hashSync(password, saltRounds);
     const uuid = createBinaryUUID();
-    const query = 'INSERT INTO users (userID, username, email, password) VALUES (?, ?, ?, ?)';
-    db.query(query, [uuid.buffer, username, email, hashedPassword], (err, result) => {
+    const query = 'INSERT INTO users (userID, username, email, password, loginType) VALUES (?, ?, ?, ?, ?)';
+    db.query(query, [uuid.buffer, username, email, hashedPassword, 'local'], (err, result) => {
         if (err) {
             if (err.code === 'ER_DUP_ENTRY') {
                 return res.status(400).json({ error: 'Username or email already exists' });
@@ -141,6 +146,47 @@ app.post('/login-user', (req, res) => {
             }
         }
     });
+});
+
+app.post('/auth/google', async (req, res) => {
+    const { code } = req.body;
+    console.log(req.body);
+    try {
+        const { tokens } = await client.getToken(code)
+        
+        const ticket = await client.verifyIdToken({
+            idToken: tokens.id_token,
+            audience: process.env.GOOGLE_CLIENT_ID
+        })
+
+        const payload = ticket.getPayload()
+
+        req.session.pendingGoogleUser = {
+            email: payload.email,
+            googleId: payload.sub,
+            picture: payload.picture,
+            name: payload.name,
+        };
+
+        checkExistenceQuery = "SELECT * FROM users WHERE email = ?"
+        db.query(checkExistenceQuery, [payload.email], (err, ceRes) => {
+            if (err)
+                res.status(500).json({ error: 'Error logging in' });
+            else {
+                console.log(ceRes)
+                if (ceRes.length == 0)
+                    return res.json({ status: 'no-acc' });
+                if (ceRes[0].loginType == 'local')
+                    return res.json({ status: 'local' });
+                if (ceRes[0].loginType == 'google')
+                    return res.json({ status: 'google' });
+            }
+        })
+
+    } catch (err) {
+        console.error(err.response?.data || err);
+    }
+    
 });
 
 app.get('/logout-user', (req, res) => {
