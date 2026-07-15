@@ -3,8 +3,14 @@ import { useState } from 'react'
 import { Google } from 'react-bootstrap-icons'
 import { toast} from 'react-hot-toast'
 import { Link, useNavigate} from 'react-router-dom'
+import { GoogleLogin, googleLogout, useGoogleLogin } from '@react-oauth/google';
+import { jwtDecode } from 'jwt-decode';
+import AccountLink from './components/AccountLink'
+import axios from 'axios'
+import { useAuth } from './components/AuthProvider'
 
 function SignUp() {
+    const {setUser} = useAuth();
     const [username, setUsername] = useState('')
     const [email, setEmail] = useState('')
     const [password, setPassword] = useState('')
@@ -27,7 +33,46 @@ function SignUp() {
     const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
     const usernameRegex = /^[a-zA-Z0-9_]{5,20}$/;
 
-    
+    const [isAccLinkOpen, setIsAccLinkOpen] = useState(false);
+    const googleLogin = useGoogleLogin({
+        flow: "auth-code",
+        onSuccess: async ({code}) => {
+            try {
+
+                toast.success('Google login validated successful!')
+                const API_URL = import.meta.env.VITE_API_URL
+                const response = await axios.post(`${API_URL}/auth/google`, {
+                    code
+                }, {
+                    withCredentials: true
+                })
+                const data = response.data
+                const status = response.data.status
+
+                if (status === 'local')
+                return setIsAccLinkOpen(true)
+
+                if (status === 'google'){
+                    setUser(data.user)
+                    return navigate('/')
+                }
+
+                if (status === 'no-acc')
+                return navigate('/signup/google')
+
+            } catch (err) {
+
+                console.error(err);
+
+                if (err.response) {
+                    console.error(err.response.status);
+                    console.error(err.response.data);
+                }
+            }
+        },
+        onError: () => toast.error('Google login failed'),
+    });
+
     const checkUsernameValidity = (username) => {
         return usernameRegex.test(username);
     }
@@ -175,7 +220,7 @@ function SignUp() {
             <div className='flex flex-col w-[30%] mt-[10vh] mb-[10vh] items-center justify-center bg-white rounded-xl min-h-dvh p-10 gap-2 shadow-md/30 z-10'>
                 <div className='alt-font text-5xl'>tomoi</div>
                 <div className='text-xl'>Start rambling now!</div>
-                <button className='flex flex-row gap-3 mt-[6vh] mb-[2vh] items-center justify-center w-full bg-[var(--tomoi-gray-l)] hover:bg-[var(--tomoi-gray-d)] rounded-full py-2 px-4 font-bold shadow-sm/30 outline-2 outline-dashed' type="button">
+                <button onClick={googleLogin} className='flex flex-row gap-3 mt-[6vh] mb-[2vh] items-center justify-center w-full bg-[var(--tomoi-gray-l)] hover:bg-[var(--tomoi-gray-d)] rounded-full py-2 px-4 font-bold shadow-sm/30 outline-2 outline-dashed' type="button">
                     <Google className='' width={20} height={20} />
                     Login with Google
                 </button>
@@ -263,6 +308,7 @@ function SignUp() {
             </div>
             <div className='inset-text-shadow-alt fixed left-0 -bottom-12 z-1 leading-none alt-font text-[15rem]'>Sign Up</div>
         </div>
+        <AccountLink isOpen={isAccLinkOpen} onClose={() => setIsAccLinkOpen(false)}></AccountLink>
         </>
     )
 }

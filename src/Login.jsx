@@ -1,11 +1,13 @@
 import { useState } from 'react'
 import { Google } from 'react-bootstrap-icons'
 import { Link, useNavigate } from 'react-router-dom'
+import { Popover } from '@mui/material';
 import { toast} from 'react-hot-toast'
 import { useAuth } from './components/AuthProvider'
 import { GoogleLogin, googleLogout, useGoogleLogin } from '@react-oauth/google';
 import { jwtDecode } from 'jwt-decode';
 import axios from 'axios'
+import AccountLink from './components/AccountLink';
 
 function Login() {
   const navigate = useNavigate();
@@ -14,6 +16,7 @@ function Login() {
   const [password, setPassword] = useState('')
   const [rememberMe, setRememberMe] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
+  const [isAccLinkOpen, setIsAccLinkOpen] = useState(false);
 
   const googleLogin = useGoogleLogin({
         flow: "auth-code",
@@ -27,17 +30,20 @@ function Login() {
             }, {
                 withCredentials: true
             })
-
+            const data = response.data
             const status = response.data.status
-            console.log(status)
-            if (status === 'local')
-              return navigate('/')
+            if (status === 'local') {
+              return setIsAccLinkOpen(true)
+            }
 
-            if (status === 'google')
+            if (status === 'google') {
+              setUser(data.user)
               return navigate('/')
+            }
 
-            if (status === 'no-username')
-              return navigate('/signup')
+            if (status === 'no-acc') {
+              return navigate('/signup/google')
+            }
 
           } catch (err) {
 
@@ -145,7 +151,10 @@ function Login() {
           <div className='inset-text-shadow text-gray-200 relative mr-auto z-0 leading-none alt-font text-[15rem] mb-[-45px]'>Login</div>
         </div>
       </div>
+
+      <AccountLink isOpen={isAccLinkOpen} onClose={() => setIsAccLinkOpen(false)}></AccountLink>
     </>
+
   )
 }
 

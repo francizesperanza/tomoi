@@ -37,6 +37,7 @@ app.use(cors(corsOptions));
 app.use(session({
     secret: process.env.SESSION_SECRET,
     resave: false,
+    rolling: true,
     saveUninitialized: false,
     cookie: { httpOnly: true, secure: false, sameSite: "lax", maxAge: 7 * 24 * 60 * 60 * 1000 }
 }));
@@ -117,6 +118,49 @@ app.post('/signup-user', (req, res) => {
     });
 });
 
+app.put('/signup-link', (req, res) => {
+    const pendingUser = req.session.pendingGoogleUser
+    const query = 'UPDATE users SET loginType = ?, googleID = ? WHERE email = ?';
+    db.query(query, ['google', pendingUser.googleId, pendingUser.email], (err, result) => {
+        if (err) {
+            console.error('Error linking user:', err);
+            res.status(500).json({ error: 'Error linking user' });
+        } else {
+            const selectQuery = 'SELECT * FROM users WHERE email = ?';
+            db.query(selectQuery, [pendingUser.email], (err, selRes) => {
+                if (err) {
+                    console.error('Error finding user:', err);
+                    res.status(500).json({ error: 'Error finding user' });
+                } else {
+                    req.session.pendingGoogleUser = null
+                    req.session.user = req.session.user = { userID: fromBinaryUUID(selRes[0].userID), username: selRes[0].username, email: selRes[0].email, profilePic: selRes[0].profilePic };
+                    res.status(201).json({ user: req.session.user, message: 'User linked successfully' });
+                }
+            })
+        }
+    });
+});
+
+app.post('/google-signup-user', (req, res) => {
+    const { username} = req.body;
+    const pendingUser = req.session.pendingGoogleUser
+    const uuid = createBinaryUUID();
+    const query = 'INSERT INTO users (userID, username, email, loginType, googleID, profilePic) VALUES (?, ?, ?, ?, ?, ?)';
+    db.query(query, [uuid.buffer, username, pendingUser.email, 'google', pendingUser.googleId, pendingUser.picture], (err, result) => {
+        if (err) {
+            if (err.code === 'ER_DUP_ENTRY') {
+                return res.status(400).json({ error: 'Username or email already exists' });
+            }
+            console.error('Error inserting user:', err);
+            res.status(500).json({ error: 'Error inserting user' });
+        } else {
+            req.session.user = { userID: uuid, username: username, email: pendingUser.email, profilePic: pendingUser.picture };
+            res.status(201).json({user: req.session.user,  message: 'User created successfully' });
+        }
+        req.session.pendingGoogleUser = null
+    });
+});
+
 app.post('/login-user', (req, res) => {
     const { username, password } = req.body;
     if (!usernameRegex.test(username) || !passwordRegex.test(password)) {
@@ -150,7 +194,7 @@ app.post('/login-user', (req, res) => {
 
 app.post('/auth/google', async (req, res) => {
     const { code } = req.body;
-    console.log(req.body);
+
     try {
         const { tokens } = await client.getToken(code)
         
@@ -171,15 +215,18 @@ app.post('/auth/google', async (req, res) => {
         checkExistenceQuery = "SELECT * FROM users WHERE email = ?"
         db.query(checkExistenceQuery, [payload.email], (err, ceRes) => {
             if (err)
-                res.status(500).json({ error: 'Error logging in' });
+                return res.status(500).json({ error: 'Error logging in' });
             else {
                 console.log(ceRes)
                 if (ceRes.length == 0)
                     return res.json({ status: 'no-acc' });
                 if (ceRes[0].loginType == 'local')
                     return res.json({ status: 'local' });
-                if (ceRes[0].loginType == 'google')
-                    return res.json({ status: 'google' });
+                if (ceRes[0].loginType == 'google') {
+                    req.session.pendingGoogleUser = null
+                    req.session.user = { userID: fromBinaryUUID(ceRes[0].userID), username: ceRes[0].username, email: ceRes[0].email, profilePic: ceRes[0].profilePic };
+                    return res.json({ user: req.session.user, status: 'google' });
+                }
             }
         })
 
@@ -341,6 +388,14 @@ app.get('/session-check', (req, res) => {
         return res.status(401).json({error: "User is not logged in."});
     return res.json(req.session.user);
 })
+
+app.get('/google-session-check', (req, res) => {
+    if (!req.session.pendingGoogleUser)
+        return res.status(401).json({error: "No pending google logins."});
+    const pendingUser = req.session.pendingGoogleUser
+    return res.json({name: pendingUser.name, picture: pendingUser.picture});
+})
+
 
 // SEARCH
 
