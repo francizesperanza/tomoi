@@ -21,6 +21,7 @@ import { GoogleOAuthProvider } from '@react-oauth/google'
 import axios from 'axios';
 import GoogleAuthProvider from './components/GoogleAuthProvider.jsx'
 import GooglePrivateRoute from './components/GooglePrivateRoute.jsx'
+import ForgotPassword from './ForgotPassword.jsx'
 
 axios.defaults.headers.common['Content-Type'] = 'application/json';
 axios.defaults.withCredentials = true;
@@ -42,7 +43,7 @@ createRoot(document.getElementById('root')).render(
             <Routes>
               <Route path="/login" element={<Login />} />
               <Route path="/signup" element={<SignUp />} />
-              
+              <Route path="/forgot-password" element={<ForgotPassword/>} />
               <Route path="/signup/google" element = {
                 <GoogleAuthProvider>
                   <GooglePrivateRoute>

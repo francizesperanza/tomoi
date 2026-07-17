@@ -236,6 +236,37 @@ app.post('/auth/google', async (req, res) => {
     
 });
 
+app.post('/forgot-password', async (req, res) => {
+    const { userEmail } = req.body;
+
+    const query = 'SELECT * FROM users WHERE username = ? OR email = ?';
+
+    db.query(query, [userEmail, userEmail], (err, result) => {
+        if (err) {
+            res.status(500).json({ error: 'Error checking user' });
+        } else {
+            const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
+            if (result.length < 1) {
+                return res.status(200).json({ message: 'Reset request saved!' });
+            } else {
+                const code = Math.random().toString(36).slice(2, 8);
+                
+
+                saveReqQuery = `INSERT INTO password_resets (email, code, expiresAt) VALUES (?, ?, ?)
+                                ON DUPLICATE KEY UPDATE code = VALUES(code), expiresAt = VALUES(expiresAt), attempts = 0;`
+                db.query(saveReqQuery, [result[0].email, code, expiresAt], (err, result) => {
+                    if (err) {
+                        console.log(err)
+                        return res.status(500).json({ error: 'Error saving reset request' });
+                    }
+                    return res.status(200).json({ message: 'Reset request saved!' });
+                })
+            }
+        }
+    });
+    
+});
+
 app.get('/logout-user', (req, res) => {
     req.session.user = null
     res.status(200).json({message: 'Logout successful'})

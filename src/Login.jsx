@@ -117,7 +117,7 @@ function Login() {
             <div className='flex flex-col items-center justify-center w-full gap-1'>
               <div className='flex items-center font-black w-full'>
                 <label className='' htmlFor="password">Password</label>
-                <a className='ml-auto text-sm font-normal hover:text-[var(--tomoi-yellow)]' href="#">Forgot password?</a>
+                <a className='ml-auto text-sm font-normal hover:text-[var(--tomoi-yellow)]' href="/forgot-password">Forgot password?</a>
               </div>
               <input className='w-full rounded-xl bg-[var(--tomoi-gray)] py-2 px-4' type="password" id="password" name="password" onChange={(e) => {setPassword(e.target.value)}} />
             </div>
