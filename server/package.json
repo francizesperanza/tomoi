@@ -21,6 +21,7 @@
     "express-session": "^1.19.0",
     "google-auth-library": "^10.9.0",
     "mysql2": "^3.19.1",
+    "nodemailer": "^9.0.3",
     "uploadthing": "^7.7.4"
   },
   "devDependencies": {

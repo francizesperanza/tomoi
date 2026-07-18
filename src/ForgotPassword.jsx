@@ -15,12 +15,85 @@ dayjs.extend(duration);
 function ForgotPassword() {
     const {setUser} = useAuth()
     const [userEmail, setUserEmail] = useState('')
+    const [confirmationCode, setConfirmationCode] = useState('')
+    const [password, setPassword] = useState('')
+    const [confirmPassword, setConfirmPassword] = useState('')
     const navigate = useNavigate()
     const [step, setStep] = useState(1)
 
     const [emailSentCount, setEmailSetCount] = useState(0)
     const [confirmationTimer, setConfirmationTimer] = useState(0)
     const [currUserEmail, setCurrUserEmail] = useState(0)
+
+    const [passwordChanged, setPasswordChanged] = useState(false)
+    const [isPasswordVisible, setIsPasswordVisible] = useState(false)
+
+    const [confirmPasswordChanged, setConfirmPasswordChanged] = useState(false)
+
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+
+    const checkPasswordValidity = (password) => {
+        return passwordRegex.test(password);
+    }
+
+    const isPasswordMatch = () => {
+        return password === confirmPassword;
+    }
+
+    const passwordValid = checkPasswordValidity(password);
+    const confirmPasswordValid = isPasswordMatch();
+
+    const generatePasswordErrorMessage = () => {
+        if (!passwordChanged)
+            return '';
+
+        if (password.length === 0) {
+            return 'This is a required field.';
+        } else if (!checkPasswordValidity(password)) {
+            return 'Password must be 8-100 characters long and contain at least one uppercase letter, one lowercase letter, one number, and one special character (@$!%*?&).';
+        } else {
+            return 'Password is valid.';
+        }
+    }
+
+    const generateConfirmPasswordErrorMessage = () => {
+        if (!confirmPasswordChanged)
+            return '';
+
+        if (confirmPassword.length === 0) {
+            return 'This is a required field.';
+        } else if (isPasswordMatch()) {
+            return 'Passwords match.';
+        } else {
+            return 'Passwords do not match.';
+        }
+    }
+
+    const handleSubmitConfirmationCode = async (e) => {
+        e.preventDefault()
+
+        if (confirmationCode.length == 0) {
+            toast.error('Please enter a code!');
+            return;
+        } else {
+            try {
+
+                const API_URL = import.meta.env.VITE_API_URL
+                const response = await axios.post(`${API_URL}/verify-confirmation-code`, {
+                    confirmationCode,
+                    userEmail
+                })
+
+                if (response.status == 200) {
+                    toast.success('Confirmation code verified!')
+                    setStep(prev => prev + 1)
+                }
+
+            } catch (error) {
+                toast.error(error.response.data.message ?? "Something went wrong.")
+            }
+        }
+    }
 
     const handleSubmitUserEmail = async (e) => {
         e.preventDefault()
@@ -102,8 +175,8 @@ function ForgotPassword() {
 
                 {
                     step == 2 &&
-                    <form className='flex flex-col items-center justify-center items-center justify-center w-full gap-5' onSubmit={handleSubmitUserEmail}>
-                        <div className='flex flex-col gap-3'>
+                    <form className='flex flex-col items-center justify-center items-center justify-center w-full gap-5' onSubmit={handleSubmitConfirmationCode}>
+                        <div className='flex flex-col gap-3 w-full'>
                             <div className='text-lg text-justify leading-none mt-10 w-full font-bold'>We have sent you the confirmation code!</div>
                             <div className='italic text-[var(--tomoi-gray-d)] leading-none w-full font-bold'>Please check the inbox connected to {currUserEmail} and input the confirmation code.</div>
                         </div>
@@ -113,7 +186,7 @@ function ForgotPassword() {
                                 <label className='' htmlFor="username">Confirmation Code</label>
                             </div>
                             <input required className='w-full rounded-xl bg-[var(--tomoi-gray)] py-2 px-4' type="text" id="username" name="username" onChange={(e) => {  
-                                setUserEmail(e.target.value);
+                                setConfirmationCode(e.target.value);
                             }} />
                             {
                                 confirmationTimer != 0 ?
@@ -129,6 +202,58 @@ function ForgotPassword() {
                                 <ArrowLeft></ArrowLeft>
                                 Change Username/Email
                             </button>
+                        </div>
+                    </form>
+                }
+
+                {
+                    step == 3 &&
+                    <form className='flex flex-col items-center justify-center items-center justify-center w-full gap-5' onSubmit={handleSubmitUserEmail}>
+                        <div className='flex flex-col gap-3 w-full'>
+                            <div className='text-lg text-justify leading-none mt-10 w-full font-bold'>Confirmation code validated!</div>
+                            <div className='italic text-[var(--tomoi-gray-d)] leading-none w-full font-bold'>Please enter a new password.</div>
+                        </div>
+                        
+                        <div className='flex flex-col items-center justify-center w-full gap-1'>
+                            <div className='flex items-center font-black w-full'>
+                                <label className='' htmlFor="password">Password</label>
+                            </div>
+                            <div className='flex items-stretch w-full'>
+                                <input required className='w-full rounded-s-lg bg-[var(--tomoi-gray)] py-2 px-4' type={isPasswordVisible ? "text" : "password"} id="password" name="password" onChange={(e) => {
+                                    setPasswordChanged(true);
+                                    setPassword(e.target.value);
+                                    checkPasswordValidity(e.target.value);
+                                }} />
+                                <button dir='rtl' className='border-dashed border-2 rounded-s-lg flex w-[20%] items-center justify-center cursor-pointer bg-[var(--tomoi-yellow-l)] hover:bg-[var(--tomoi-yellow)]' type='button' onClick={() => setIsPasswordVisible(!isPasswordVisible)}>
+                                    {isPasswordVisible ? <EyeIcon className='' width={20} height={20} /> : <EyeClosed className='' width={20} height={20} />}
+                                </button>
+                            </div>
+                            <div className={'text-sm w-full' + (checkPasswordValidity(password) ? ' text-green-500' : ' text-red-500')}>
+                                {generatePasswordErrorMessage()}
+                            </div>
+                        </div>
+
+                        <div className='flex flex-col items-center justify-center w-full gap-1'>
+                            <div className='flex items-center font-black w-full'>
+                                <label className='' htmlFor="confirmPassword">Confirm Password</label>
+                            </div>
+                            <input required className='w-full rounded-xl bg-[var(--tomoi-gray)] border-black py-2 px-4' type="password" id="confirmPassword" name="confirmPassword" onChange={(e) => {
+                                setConfirmPasswordChanged(true);
+                                setConfirmPassword(e.target.value);
+                            }}/>
+                            <div className={'text-sm w-full' + (isPasswordMatch() && password.length != 0 ? ' text-green-500' : ' text-red-500')}>
+                                {generateConfirmPasswordErrorMessage()}
+                            </div>
+                        </div>
+                        
+                        <div className='flex flex-col items-center justify-center grow w-full gap-2'>
+                            <button className='w-full bg-[var(--tomoi-green)] hover:bg-[var(--tomoi-green-d)] rounded-full py-2 px-4 font-bold shadow-sm/30 outline-2 outline-dashed' type="submit">Change Password</button>
+                            <Link to="/login" className='w-full'>
+                                <button className='flex flex-row gap-3 items-center justify-center w-full bg-[var(--tomoi-gray-l)] hover:bg-[var(--tomoi-gray-d)] rounded-full py-2 px-4 font-bold shadow-sm/30 outline-2 outline-dashed' type="button">
+                                    <ArrowLeft></ArrowLeft>
+                                    Back
+                                </button>
+                            </Link>
                         </div>
                     </form>
                 }

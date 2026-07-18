@@ -10,11 +10,19 @@ dotenv.config({
 
 const bcrypt = require('bcrypt');
 const crypto = require('crypto');
+const nodemailer = require('nodemailer');
 const session = require('express-session');
 const { encrypt, decrypt } = require('./helper');
 const { fromBinaryUUID, toBinaryUUID, createBinaryUUID} = require("binary-uuid");
 const seedPosts = require('./scripts/testing');
 const dayjs = require('dayjs');
+const utc = require('dayjs/plugin/utc');
+const timezone = require('dayjs/plugin/timezone');
+
+dayjs.extend(utc);
+dayjs.extend(timezone);
+dayjs.tz.setDefault('Asia/Manila');
+
 const { uploadthingHandler } = require('./uploadthing');
 const { UTApi } = require("uploadthing/server")
 const { OAuth2Client } = require("google-auth-library")
@@ -60,6 +68,15 @@ const db = mysql.createConnection({
     timezone: "+08:00",
     dateStrings: true
 });
+
+const transporter = nodemailer.createTransport({
+    service: "gmail",
+    auth: {
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_APP_PASSWORD
+    }
+})
+
 
 const sortQueryMap = {
     'newest': 'p.dateCreated DESC',
@@ -243,7 +260,7 @@ app.post('/forgot-password', async (req, res) => {
 
     db.query(query, [userEmail, userEmail], (err, result) => {
         if (err) {
-            res.status(500).json({ error: 'Error checking user' });
+            return res.status(500).json({ error: 'Error checking user' });
         } else {
             const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
             if (result.length < 1) {
@@ -254,17 +271,121 @@ app.post('/forgot-password', async (req, res) => {
 
                 saveReqQuery = `INSERT INTO password_resets (email, code, expiresAt) VALUES (?, ?, ?)
                                 ON DUPLICATE KEY UPDATE code = VALUES(code), expiresAt = VALUES(expiresAt), attempts = 0;`
-                db.query(saveReqQuery, [result[0].email, code, expiresAt], (err, result) => {
+                db.query(saveReqQuery, [result[0].email, code, expiresAt], (err, iRes) => {
                     if (err) {
                         console.log(err)
                         return res.status(500).json({ error: 'Error saving reset request' });
                     }
+
+                    transporter.sendMail({
+                        from: process.env.SMTP_USER,
+                        to: result[0].email,
+                        subject: "Reset Password Confirmation Code",
+                        text: 
+                        `
+                            Hi ${result[0].username}!
+
+                            Here is the confirmation code needed for your password reset:
+
+                            ${code}
+
+                            This confirmation code expires in 15 minutes.
+                        `
+                    })
+
                     return res.status(200).json({ message: 'Reset request saved!' });
                 })
             }
         }
     });
     
+});
+
+app.post('/verify-confirmation-code', async (req, res) => {
+    const { confirmationCode, userEmail } = req.body;
+
+    // Find user
+    const query = `
+        SELECT email FROM users WHERE username = ? OR email = ?;
+    `;
+
+    db.query(query, [userEmail, userEmail], (err, findResult) => {
+        if (err) {
+            console.log(err);
+            return res.status(500).json({ error: 'Error validating code ' });
+        }
+        
+        if (findResult.length < 1) {
+            return res.status(400).json({ message: 'Error validating code '})
+        }
+
+        const email = findResult[0].email
+
+        const psQuery = `
+            SELECT * FROM password_resets WHERE email = ?
+        `
+
+        db.query(psQuery, [email], (err, psResults) => {
+            if (err) {
+                console.log(err);
+                return res.status(500).json({ error: 'Error validating code ' });
+            }
+
+            if (psResults.length < 1) {
+                return res.status(400).json({ message: 'No password reset request found' });
+            }
+
+            const reset = psResults[0]
+            if (reset.lockedUntil && dayjs.utc(reset.lockedUntil)
+                .tz("Asia/Manila").isAfter(dayjs().utc()
+                .tz("Asia/Manila"))) {
+                return res.status(423).json({ message: 'Too many attempts. Try again later.'})
+            }
+            
+            if (reset.code != confirmationCode) {
+                
+                const attemptQuery = `
+                    UPDATE password_resets 
+                    SET 
+                    attempts = 
+                    CASE
+                        WHEN attempts + 1 >= 5 THEN 0
+                        ELSE attempts + 1
+                    END,
+                    lockedUntil = 
+                    CASE
+                        WHEN attempts + 1 >= 5 THEN DATE_ADD(NOW(), INTERVAL 15 MINUTE)
+                        ELSE lockedUntil
+                    END
+                    WHERE email = ?;
+                `;
+
+                db.query(attemptQuery, [email], (err, result) => {
+                    if (err) {
+                        console.log(err.message)
+                        return res.status(500).json({ error: 'Error validating code' });
+                    }
+                    return res.status(400).json({ message: 'Confirmation code is wrong' });
+                })
+                
+            } else {
+                const resetQuery = `
+                    UPDATE password_resets
+                    SET attempts = 0,
+                        lockedUntil = NULL
+                    WHERE email = ?;
+                `;
+
+                db.query(resetQuery, [email], (err) => {
+                    if (err) {
+                        console.log(err.message)
+                        return res.status(500).json({ error: 'Error resetting attempts' });
+                    }
+                    return res.status(200).json({ message: 'Confirmation code verified!' });
+                });
+            }
+        })
+    });
 });
 
 app.get('/logout-user', (req, res) => {
