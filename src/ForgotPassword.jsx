@@ -18,12 +18,12 @@ function ForgotPassword() {
     const [confirmationCode, setConfirmationCode] = useState('')
     const [password, setPassword] = useState('')
     const [confirmPassword, setConfirmPassword] = useState('')
+    const [currUserEmail, setCurrUserEmail] = useState('')
     const navigate = useNavigate()
     const [step, setStep] = useState(1)
 
     const [emailSentCount, setEmailSetCount] = useState(0)
-    const [confirmationTimer, setConfirmationTimer] = useState(0)
-    const [currUserEmail, setCurrUserEmail] = useState(0)
+    const [resendTimer, setResendTimer] = useState(0)
 
     const [passwordChanged, setPasswordChanged] = useState(false)
     const [isPasswordVisible, setIsPasswordVisible] = useState(false)
@@ -69,6 +69,44 @@ function ForgotPassword() {
         }
     }
 
+    const removeStoredData = () => {
+        localStorage.removeItem('user-email')
+        localStorage.removeItem('curr-user-email')
+        localStorage.removeItem('resend-timer')
+        localStorage.removeItem('reset-step')
+        localStorage.removeItem('emails-sent')
+    }
+
+    const handleSubmitNewPassword = async (e) => {
+        e.preventDefault()
+
+        if (!confirmPasswordValid) {
+            toast.error('Passwords do not match!');
+            return;
+        } else if (!passwordValid) {
+            toast.error('Please enter a valid password!');
+            return;
+        } else {
+            try {
+
+                const API_URL = import.meta.env.VITE_API_URL
+                const response = await axios.put(`${API_URL}/change-password`, {
+                    password,
+                    userEmail
+                })
+
+                if (response.status == 200) {
+                    toast.success('Password changed!')
+                    removeStoredData()
+                    navigate('/login')
+                }
+
+            } catch (error) {
+                toast.error(error.response.data.message ?? "Something went wrong.")
+            }
+        }
+    }
+
     const handleSubmitConfirmationCode = async (e) => {
         e.preventDefault()
 
@@ -103,20 +141,60 @@ function ForgotPassword() {
             return;
         } else {
             try {
-                if (confirmationTimer != 0) {
+                if (resendTimer != 0) {
                     toast.error('Please wait for the timeout before sending another request.')
                 } else {
                     toast.success('Email sent!')
-                    setCurrUserEmail(userEmail)
                     const API_URL = import.meta.env.VITE_API_URL
                     const response = await axios.post(`${API_URL}/forgot-password`, {
                         userEmail
                     })
-                    
-                    setConfirmationTimer(180)
+
+                    setCurrUserEmail(userEmail)
+                    localStorage.setItem('curr-user-email', userEmail)
+                    localStorage.setItem('user-email', userEmail)
+                    setResendTimer(60)
                 }
                 setStep(prev => prev + 1)
-                setEmailSetCount(prev => prev + 1)
+                setEmailSetCount(prev => {
+                    localStorage.setItem('emails-sent', prev + 1)
+                    return prev + 1
+                })
+
+            } catch (error) {
+                console.error('Error checking user:', error);
+                console.error(error.response.status);
+                console.error(error.response.data);
+            }
+        }
+    }
+
+    const handleResendUserEmail = async (e) => {
+        e.preventDefault()
+
+        if (userEmail.length == 0) {
+            toast.error('Please enter a username or email!');
+            return;
+        } else {
+            try {
+                if (resendTimer != 0) {
+                    toast.error('Please wait for the timeout before sending another request.')
+                } else {
+                    toast.success('Email sent!')
+                    const API_URL = import.meta.env.VITE_API_URL
+                    const response = await axios.post(`${API_URL}/forgot-password`, {
+                        userEmail
+                    })
+
+                    setCurrUserEmail(userEmail)
+                    localStorage.setItem('curr-user-email', userEmail)
+                    localStorage.setItem('user-email', userEmail)
+                    setResendTimer(60)
+                }
+                setEmailSetCount(prev => {
+                    localStorage.setItem('emails-sent', prev + 1)
+                    return prev + 1
+                })
 
             } catch (error) {
                 console.error('Error checking user:', error);
@@ -127,13 +205,42 @@ function ForgotPassword() {
     }
 
     useEffect(() => {
+        const ue = localStorage.getItem('user-email')
+        const cue = localStorage.getItem('curr-user-email')
+        const rt = +localStorage.getItem('resend-timer')
+        const rs = +localStorage.getItem('reset-step')
+        const es = +localStorage.getItem('emails-sent')
+
+        if (ue)
+            setUserEmail(ue)
+
+        if (cue)
+            setCurrUserEmail(cue)
+        
+        if (rt)
+            setResendTimer(rt)
+
+        if (rs)
+            setStep(rs)
+
+        if (es)
+            setEmailSetCount(es)
+    },[])
+
+    useEffect(() => {
+        if (step)
+            localStorage.setItem('reset-step', step)
+    }, [step])
+
+    useEffect(() => {
         if (emailSentCount === 0) return
         const timer = setInterval (() => {
-            setConfirmationTimer(prev => {
+            setResendTimer(prev => {
                 if (prev <= 1) {
                     clearInterval(timer)
                     return 0;
                 }
+                localStorage.setItem('resend-timer', prev-1);
                 return prev - 1;
             });
         }, 1000);
@@ -163,7 +270,7 @@ function ForgotPassword() {
 
                         <div className='flex flex-col items-center justify-center grow w-full gap-2'>
                             <button className='w-full bg-[var(--tomoi-green)] hover:bg-[var(--tomoi-green-d)] rounded-full py-2 px-4 font-bold shadow-sm/30 outline-2 outline-dashed' type="submit">Submit</button>
-                            <Link to="/login" className='w-full'>
+                            <Link to="/login" onClick={removeStoredData} className='w-full'>
                                 <button className='flex flex-row gap-3 items-center justify-center w-full bg-[var(--tomoi-gray-l)] hover:bg-[var(--tomoi-gray-d)] rounded-full py-2 px-4 font-bold shadow-sm/30 outline-2 outline-dashed' type="button">
                                     <ArrowLeft></ArrowLeft>
                                     Back
@@ -189,10 +296,10 @@ function ForgotPassword() {
                                 setConfirmationCode(e.target.value);
                             }} />
                             {
-                                confirmationTimer != 0 ?
-                                <div>You can resend the code after {confirmationTimer}s</div>
+                                resendTimer != 0 ?
+                                <div>You can resend the code after {resendTimer}s</div>
                                 :
-                                <div className='cursor-pointer underline font-bold'>Resend code</div>
+                                <div onClick={handleResendUserEmail} className='cursor-pointer underline font-bold'>Resend code</div>
                             }
                         </div>
                         
@@ -208,7 +315,7 @@ function ForgotPassword() {
 
                 {
                     step == 3 &&
-                    <form className='flex flex-col items-center justify-center items-center justify-center w-full gap-5' onSubmit={handleSubmitUserEmail}>
+                    <form className='flex flex-col items-center justify-center items-center justify-center w-full gap-5' onSubmit={handleSubmitNewPassword}>
                         <div className='flex flex-col gap-3 w-full'>
                             <div className='text-lg text-justify leading-none mt-10 w-full font-bold'>Confirmation code validated!</div>
                             <div className='italic text-[var(--tomoi-gray-d)] leading-none w-full font-bold'>Please enter a new password.</div>
@@ -248,7 +355,7 @@ function ForgotPassword() {
                         
                         <div className='flex flex-col items-center justify-center grow w-full gap-2'>
                             <button className='w-full bg-[var(--tomoi-green)] hover:bg-[var(--tomoi-green-d)] rounded-full py-2 px-4 font-bold shadow-sm/30 outline-2 outline-dashed' type="submit">Change Password</button>
-                            <Link to="/login" className='w-full'>
+                            <Link to="/login" onClick={removeStoredData} className='w-full'>
                                 <button className='flex flex-row gap-3 items-center justify-center w-full bg-[var(--tomoi-gray-l)] hover:bg-[var(--tomoi-gray-d)] rounded-full py-2 px-4 font-bold shadow-sm/30 outline-2 outline-dashed' type="button">
                                     <ArrowLeft></ArrowLeft>
                                     Back

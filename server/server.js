@@ -281,16 +281,7 @@ app.post('/forgot-password', async (req, res) => {
                         from: process.env.SMTP_USER,
                         to: result[0].email,
                         subject: "Reset Password Confirmation Code",
-                        text: 
-                        `
-                            Hi ${result[0].username}!
-
-                            Here is the confirmation code needed for your password reset:
-
-                            ${code}
-
-                            This confirmation code expires in 15 minutes.
-                        `
+                        text: `Hi ${result[0].username}! \nHere is the confirmation code needed for your password reset: ${code} \nThis confirmation code expires in 15 minutes.`
                     })
 
                     return res.status(200).json({ message: 'Reset request saved!' });
@@ -387,6 +378,56 @@ app.post('/verify-confirmation-code', async (req, res) => {
         })
     });
 });
+
+app.put('/change-password', (req, res) => {
+    const { password, userEmail } = req.body
+    const hashedPassword = bcrypt.hashSync(password, saltRounds);
+
+    // Find user
+    const findQuery = `
+        SELECT email, password, loginType FROM users WHERE username = ? OR email = ?;
+    `;
+
+    db.query(findQuery, [userEmail, userEmail], (err, findResult) => {
+        if (err) {
+            console.log(err);
+            return res.status(500).json({ error: 'Error updating password ' });
+        }
+        
+        if (findResult.length < 1) {
+            return res.status(400).json({ message: 'Error updating password '})
+        }
+        
+        if (findResult[0].loginType == 'google' && !findResult[0].password) {
+            return res.status(400).json({ message: 'Cannot change password to Google linked accounts'})
+        }
+
+        const email = findResult[0].email
+        const query = 'UPDATE users SET password = ? WHERE email = ?'
+        db.query(query, [hashedPassword, email], (err, result) => {
+            if (err) {
+                console.error('Error updating password:', err);
+                return res.status(500).json({ error: 'Error updating password' });
+            } else {
+                if (result.length < 1) {
+                    return res.status(400).json({ message: 'Error updating password' });
+                }
+
+                const delQuery = 'DELETE FROM password_resets WHERE email = ?'
+
+                db.query(delQuery, [email], (err, delRes) => {
+                    if (err) {
+                        console.error('Error deleting reset record:', err);
+                        return res.status(500).json({ error: 'Error deleting reset record' });
+                    }
+                    
+                    return res.status(200).json({ message: 'Password successfully changed!' });
+                })
+            }
+        });
+    })
+
+})
 
 app.get('/logout-user', (req, res) => {
     req.session.user = null
