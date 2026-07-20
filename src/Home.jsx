@@ -60,7 +60,7 @@ function Home() {
   const sampleText = "Want on this when she what would you. In how them or these, well two two there than give, by it about any up most want his who at. Us now do at, that these have as over I one, know some with our he no, person by not any do over give, my when in want, or an now into you with by want he get I do but not, at good, us this say my, most some use come she up if and, your him as now, good use no how us say, good like, now, do there"
   
   const writeTodayEntry = () => {
-    setSelectedDate(dayjs(Date.now()))
+    setSelectedDate(dayjs(Date.now()).startOf('day'))
     console.log(dayjs().isToday())
     setView('calendar')
     navigate('/journal')
@@ -71,13 +71,13 @@ function Home() {
     navigate('/journal')
   }
 
-  const { data: latestEntry = {}, isLoadingLatestEntry, latestEntryError } = useQuery ({
+  const { data: latestEntry = {}, isFetching: isLoadingLatestEntry, latestEntryError } = useQuery ({
     queryKey: ["latest-entry", user?.userID],
     queryFn: () => getLatestEntry(user),
     enabled: !!user
   })
 
-  const { data: lastActivityEntry = {}, isLoadingLastActivityEntry, lastActivityEntryError } = useQuery ({
+  const { data: lastActivityEntry = {}, isFetching: isLoadingLastActivityEntry, lastActivityEntryError } = useQuery ({
     queryKey: ["last-activity-entry", user?.userID],
     queryFn: () => getLastActivityEntry(user),
     enabled: !!user
@@ -153,7 +153,11 @@ const getLastActivityEntry = async(user) => {
                         <TomoiCalendar></TomoiCalendar>
 
                         {
-                            !dayjs(latestEntry.dateCreated).isToday() || !latestEntry ?
+                            isLoadingLatestEntry ?
+                            <div className='relative overflow-hidden bg-[var(--tomoi-white)] p-4 rounded-xl flex flex-col items-center h-[15%] outline-dashed outline-2 justify-center group'>
+                                <LoadingComponent></LoadingComponent>
+                            </div>
+                            : !dayjs(latestEntry.dateCreated).isToday() || !latestEntry ?
                             <div className='flex bg-white rounded-xl items-center justify-center grow-2 gap-3 max-h-[15%] outline-[var(--tomoi-gray-d)] outline-dashed outline-2'>
                                 <div className='flex gap-4 px-5 w-[80%] items-center justify-center'>
                                     <ExclamationTriangle width={40} height={40} className='fill-[var(--tomoi-yellow)]'></ExclamationTriangle>
@@ -192,13 +196,11 @@ const getLastActivityEntry = async(user) => {
                             <div data-text="Last activity" className='stroked-left font-bold text-3xl'
                             style={{"--inside-color": 'black'}}>Last activity</div>
                             {
-                                loading &&
+                                isLoadingLastActivityEntry ?
                                 <div className='relative overflow-hidden bg-[var(--tomoi-white)] p-4 rounded-xl shadow-md/20 hover:shadow-md/40 flex flex-col items-center grow-1 justify-center group'>
                                     <LoadingComponent></LoadingComponent>
                                 </div>
-                            }
-                            {
-                                lastActivityEntry?.content &&
+                                : lastActivityEntry?.content &&
                                 <div onClick={() => {goToLatestActivityEntry(lastActivityEntry.dateCreated)}} className='relative overflow-hidden bg-[var(--tomoi-white)] p-4 rounded-xl shadow-md/20 hover:shadow-md/40 flex flex-col items-start grow-1 justify-end group'>
                                     <div className='absolute text-md font-bold z-50 select-none pointer-events-none right-2'>#{lastActivityEntry.postNumber}</div>
                                     <div className='absolute top-3'

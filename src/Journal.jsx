@@ -491,7 +491,7 @@ function Journal() {
                                                 </div>
                                             </div>
                                         </div>  
-                                        : !hasEntry && selectedDate.isBefore(dayjs(new Date()), 'hour') ?
+                                        : !hasEntry && selectedDate.isBefore(dayjs(new Date()), 'second') ?
                                         <div className='bg-white rounded-xl h-screen w-full items-center justify-center flex flex-col gap-5 z-10'>
                                             <EmojiFrown width={'9em'} height={'9em'} className='text-[var(--tomoi-gray)]'></EmojiFrown>
                                             <div className='text-lg text-[var(--tomoi-gray-d)]'>No entry yet.</div>
