@@ -63,7 +63,7 @@ function EntryEditor({isOpen, onClose, mode}) {
             types: ['heading', 'paragraph'],
         }),
         Placeholder.configure({
-            placeholder: 'Loading content',
+            placeholder: 'Start writing here!',
         })
     ], []);
 
@@ -240,8 +240,7 @@ function EntryEditor({isOpen, onClose, mode}) {
 
     }
 
-    const handleSave = async (e) => {
-        e.preventDefault()
+    const handleSave = async () => {
 
         const dateCreated = dayjs(selectedDate).format('YYYY-MM-DD HH:mm:ss');
         const lastEdited = dayjs(Date.now()).format('YYYY-MM-DD HH:mm:ss');
@@ -249,70 +248,63 @@ function EntryEditor({isOpen, onClose, mode}) {
         const content =  JSON.stringify(editorContent)
         const contentText = editor.getText()
         const writtenOnTime = dayjs(selectedDate).isToday();
+        const finalTitle = title.length < 1 ? "Untitled" : title; 
 
-        if (title.length === 0) {
-            toast.error('Please enter a title for your entry!');
-            return;
-        } else if (editor.getText().length === 0) {
-            toast.error('You need to fill up your entry!');
-            return;
-        } else {
-            if (mode === 'new'){    
-                try {
-                    setLoading(true)
-                    const API_URL = import.meta.env.VITE_API_URL
-                    const response = await axios.post(`${API_URL}/create-entry`, {
-                        title,
-                        author,
-                        content,
-                        contentText,
-                        feeling,
-                        dateCreated,
-                        lastEdited,
-                        tags,
-                        writtenOnTime
-                    })
-                    const data = await response.data;
-                    handleStreaks(writtenOnTime, author);
+        if (mode === 'new'){    
+            try {
+                setLoading(true)
+                const API_URL = import.meta.env.VITE_API_URL
+                const response = await axios.post(`${API_URL}/create-entry`, {
+                    title: finalTitle,
+                    author,
+                    content,
+                    contentText,
+                    feeling,
+                    dateCreated,
+                    lastEdited,
+                    tags,
+                    writtenOnTime
+                })
+                const data = await response.data;
+                handleStreaks(writtenOnTime, author);
 
-                    toast.success(data.message);
-                    queryClient.invalidateQueries({queryKey: ['streakStats']})
-                    queryClient.invalidateQueries({queryKey: ['entries']})
-                    await refreshEntries();
-                } catch (err) {
-                    console.error('Error creating entry:', err);
-                }
-            } else if (mode === 'edit') {
-                if (
-                    selectedEntry.title === title &&
-                    selectedEntry.content === content &&
-                    selectedEntry.feeling === feeling &&
-                    JSON.stringify(selectedEntry.tags) === JSON.stringify(tags)
-                ) {
-                    return onClose();
-                    console.log(JSON.stringify(selectedEntry.tags),JSON.stringify(tags))
-                }
-                
-                try {
-                    setLoading(true)
-                    const API_URL = import.meta.env.VITE_API_URL
-                    const response = await axios.put(`${API_URL}/edit-entry`, {
-                        postID: selectedEntry.postID,
-                        title: title,
-                        contentID: selectedEntry.contentID,
-                        content: content,
-                        contentText: contentText,
-                        feeling: feeling,
-                        lastEdited: lastEdited,
-                        tags: tags
-                    })
-                    const data = await response.data;
-                    toast.success(data.message);
-                    queryClient.invalidateQueries({queryKey: ['entries']})
-                    await refreshEntries();
-                } catch (err) {
-                    console.error('Error updating entry:', err);
-                }
+                toast.success(data.message);
+                queryClient.invalidateQueries({queryKey: ['streakStats']})
+                queryClient.invalidateQueries({queryKey: ['entries']})
+                await refreshEntries();
+            } catch (err) {
+                console.error('Error creating entry:', err);
+            }
+        } else if (mode === 'edit') {
+            if (
+                selectedEntry.title === title &&
+                selectedEntry.content === content &&
+                selectedEntry.feeling === feeling &&
+                JSON.stringify(selectedEntry.tags) === JSON.stringify(tags)
+            ) {
+                return onClose();
+                console.log(JSON.stringify(selectedEntry.tags),JSON.stringify(tags))
+            }
+            
+            try {
+                setLoading(true)
+                const API_URL = import.meta.env.VITE_API_URL
+                const response = await axios.put(`${API_URL}/edit-entry`, {
+                    postID: selectedEntry.postID,
+                    title: title,
+                    contentID: selectedEntry.contentID,
+                    content: content,
+                    contentText: contentText,
+                    feeling: feeling,
+                    lastEdited: lastEdited,
+                    tags: tags
+                })
+                const data = await response.data;
+                toast.success(data.message);
+                queryClient.invalidateQueries({queryKey: ['entries']})
+                await refreshEntries();
+            } catch (err) {
+                console.error('Error updating entry:', err);
             }
         }
         setLoading(false)

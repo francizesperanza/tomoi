@@ -256,7 +256,7 @@ function AccountSettings({isOpen, onClose}) {
     return (
         <>
             <Modal isOpen={isOpen} onClose={onClose}>
-                <div className='relative flex border-t-2 border-dashed border-[var(--tomoi-gray-d)] max-h-[70vh] overflow-hidden'>
+                <div className='relative flex border-t-2 border-dashed border-[var(--tomoi-gray-d)] max-h-[70vh] w-[70vw] overflow-hidden'>
                     <div className='sticky top-0 flex w-[30%] flex-col bg-[var(--tomoi-gray)]  rounded-lt-xl py-4 pl-4 min-h-[70vh]'>
                         <div className='flex p-4 bg-[var(--tomoi-white)] gap-3 items-center font-bold rounded-l-xl shadow-sm/30'>
                             <Person></Person>

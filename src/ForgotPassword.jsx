@@ -7,6 +7,7 @@ import { useGoogleAuth } from './utils/useGoogleAuth'
 import { useAuth } from './components/AuthProvider'
 import dayjs from 'dayjs';
 import duration from 'dayjs/plugin/duration';
+import LoadingComponent from './components/LoadingComponent';
 
 import axios from 'axios'
 import { set } from 'animejs'
@@ -21,6 +22,7 @@ function ForgotPassword() {
     const [currUserEmail, setCurrUserEmail] = useState('')
     const navigate = useNavigate()
     const [step, setStep] = useState(1)
+    const [loading, setLoading] = useState(false)
 
     const [emailSentCount, setEmailSetCount] = useState(0)
     const [resendTimer, setResendTimer] = useState(0)
@@ -79,7 +81,7 @@ function ForgotPassword() {
 
     const handleSubmitNewPassword = async (e) => {
         e.preventDefault()
-
+        
         if (!confirmPasswordValid) {
             toast.error('Passwords do not match!');
             return;
@@ -88,7 +90,7 @@ function ForgotPassword() {
             return;
         } else {
             try {
-
+                setLoading(true)
                 const API_URL = import.meta.env.VITE_API_URL
                 const response = await axios.put(`${API_URL}/change-password`, {
                     password,
@@ -103,6 +105,8 @@ function ForgotPassword() {
 
             } catch (error) {
                 toast.error(error.response.data.message ?? "Something went wrong.")
+            } finally {
+                setLoading(false)
             }
         }
     }
@@ -115,7 +119,7 @@ function ForgotPassword() {
             return;
         } else {
             try {
-
+                setLoading(true)
                 const API_URL = import.meta.env.VITE_API_URL
                 const response = await axios.post(`${API_URL}/verify-confirmation-code`, {
                     confirmationCode,
@@ -129,6 +133,8 @@ function ForgotPassword() {
 
             } catch (error) {
                 toast.error(error.response.data.message ?? "Something went wrong.")
+            } finally {
+                setLoading(false)
             }
         }
     }
@@ -141,6 +147,7 @@ function ForgotPassword() {
             return;
         } else {
             try {
+                setLoading(true)
                 if (resendTimer != 0) {
                     toast.error('Please wait for the timeout before sending another request.')
                 } else {
@@ -165,6 +172,8 @@ function ForgotPassword() {
                 console.error('Error checking user:', error);
                 console.error(error.response.status);
                 console.error(error.response.data);
+            } finally {
+                setLoading(false)
             }
         }
     }
@@ -269,7 +278,16 @@ function ForgotPassword() {
                         </div>
 
                         <div className='flex flex-col items-center justify-center grow w-full gap-2'>
-                            <button className='w-full bg-[var(--tomoi-green)] hover:bg-[var(--tomoi-green-d)] rounded-full py-2 px-4 font-bold shadow-sm/30 outline-2 outline-dashed' type="submit">Submit</button>
+                            <button className='relative w-full bg-[var(--tomoi-green)] hover:bg-[var(--tomoi-green-d)] rounded-full py-2 px-4 font-bold shadow-sm/30 outline-2 outline-dashed'
+                            style={{"pointerEvents" : loading ? "none" : "auto"}} type="submit">
+                                {
+                                    loading &&
+                                    <div className='loading absolute rounded-full inset-0 items-center justify-center flex bg-[var(--tomoi-green-d)] z-100 font-extrabold'>
+                                        <LoadingComponent/>
+                                    </div>
+                                }
+                                Submit
+                            </button>
                             <Link to="/login" onClick={removeStoredData} className='w-full'>
                                 <button className='flex flex-row gap-3 items-center justify-center w-full bg-[var(--tomoi-gray-l)] hover:bg-[var(--tomoi-gray-d)] rounded-full py-2 px-4 font-bold shadow-sm/30 outline-2 outline-dashed' type="button">
                                     <ArrowLeft></ArrowLeft>
@@ -304,7 +322,16 @@ function ForgotPassword() {
                         </div>
                         
                         <div className='flex flex-col items-center justify-center grow w-full gap-2'>
-                            <button className='w-full bg-[var(--tomoi-green)] hover:bg-[var(--tomoi-green-d)] rounded-full py-2 px-4 font-bold shadow-sm/30 outline-2 outline-dashed' type="submit">Submit</button>
+                            <button className='relative w-full bg-[var(--tomoi-green)] hover:bg-[var(--tomoi-green-d)] rounded-full py-2 px-4 font-bold shadow-sm/30 outline-2 outline-dashed'
+                            style={{"pointerEvents" : loading ? "none" : "auto"}} type="submit">
+                                {
+                                    loading &&
+                                    <div className='loading absolute rounded-full inset-0 items-center justify-center flex bg-[var(--tomoi-green-d)] z-100 font-extrabold'>
+                                        <LoadingComponent/>
+                                    </div>
+                                }
+                                Submit
+                            </button>
                             <button onClick={() => setStep(prev => prev-1)} className='flex flex-row gap-3 items-center justify-center w-full bg-[var(--tomoi-gray-l)] hover:bg-[var(--tomoi-gray-d)] rounded-full py-2 px-4 font-bold shadow-sm/30 outline-2 outline-dashed' type="button">
                                 <ArrowLeft></ArrowLeft>
                                 Change Username/Email
@@ -354,7 +381,16 @@ function ForgotPassword() {
                         </div>
                         
                         <div className='flex flex-col items-center justify-center grow w-full gap-2'>
-                            <button className='w-full bg-[var(--tomoi-green)] hover:bg-[var(--tomoi-green-d)] rounded-full py-2 px-4 font-bold shadow-sm/30 outline-2 outline-dashed' type="submit">Change Password</button>
+                            <button className='relative w-full bg-[var(--tomoi-green)] hover:bg-[var(--tomoi-green-d)] rounded-full py-2 px-4 font-bold shadow-sm/30 outline-2 outline-dashed'
+                            style={{"pointerEvents" : loading ? "none" : "auto"}} type="submit">
+                                {
+                                    loading &&
+                                    <div className='loading absolute rounded-full inset-0 items-center justify-center flex bg-[var(--tomoi-green-d)] z-100 font-extrabold'>
+                                        <LoadingComponent/>
+                                    </div>
+                                }
+                                Change Password
+                            </button>
                             <Link to="/login" onClick={removeStoredData} className='w-full'>
                                 <button className='flex flex-row gap-3 items-center justify-center w-full bg-[var(--tomoi-gray-l)] hover:bg-[var(--tomoi-gray-d)] rounded-full py-2 px-4 font-bold shadow-sm/30 outline-2 outline-dashed' type="button">
                                     <ArrowLeft></ArrowLeft>
