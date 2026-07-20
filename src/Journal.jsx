@@ -2,7 +2,7 @@ import { useEffect, useState, useRef, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import TomoiCalendar from './components/TomoiCalendar';
-import { EmojiFrown, JournalText, PencilFill, ThreeDotsVertical, Star, ArrowLeftRight, Trash, StarFill, SortDown, CalendarWeekFill, GridFill, CaretDownFill, Filter, CaretRightFill } from 'react-bootstrap-icons';
+import { EmojiFrown, JournalText, PencilFill, ThreeDotsVertical, Star, ArrowLeftRight, Trash, StarFill, SortDown, CalendarWeekFill, GridFill, CaretDownFill, Filter, CaretRightFill, Lock } from 'react-bootstrap-icons';
 import { duration, Popover } from '@mui/material';
 import EntryEditor from './components/EntryEditor';
 import { useEditor, EditorContent, EditorContext, useEditorState } from '@tiptap/react';
@@ -34,7 +34,7 @@ dayjs.extend(customParseFormat);
 
 
 function Journal() {
-    const {sortOption, setSortOption, filterOption, setFilterOption, totalEntries, entriesPerPage, currentPage, setSelectedEntry, setEntrySet, setSelectedDate, selectedEntry, loading, setLoading, refreshEntries, entrySet, view, setView} = useEntry();
+    const {selectedDate, sortOption, setSortOption, filterOption, setFilterOption, totalEntries, entriesPerPage, currentPage, setSelectedEntry, setEntrySet, setSelectedDate, selectedEntry, loading, setLoading, refreshEntries, entrySet, view, setView} = useEntry();
     const navigate = useNavigate();
     const [anchorEl, setAnchorEl] = useState(null);
     const [isJEditorOpen, setIsJEditorOpen] = useState(false);
@@ -491,7 +491,7 @@ function Journal() {
                                                 </div>
                                             </div>
                                         </div>  
-                                        :
+                                        : !hasEntry && selectedDate.isBefore(dayjs(new Date()), 'hour') ?
                                         <div className='bg-white rounded-xl h-screen w-full items-center justify-center flex flex-col gap-5 z-10'>
                                             <EmojiFrown width={'9em'} height={'9em'} className='text-[var(--tomoi-gray)]'></EmojiFrown>
                                             <div className='text-lg text-[var(--tomoi-gray-d)]'>No entry yet.</div>
@@ -500,6 +500,11 @@ function Journal() {
                                                 <PencilFill width={'1em'} height={'1em'}></PencilFill>
                                                 Start writing!
                                             </button>
+                                        </div>
+                                        :
+                                        <div className='bg-[var(--tomoi-gray)] rounded-xl h-screen w-full items-center justify-center flex flex-col gap-5 z-10'>
+                                            <Lock width={'9em'} height={'9em'} className='text-[var(--tomoi-gray-d)]'></Lock>
+                                            <div className='text-lg text-[var(--tomoi-gray-d)]'>This day didn't happen yet!</div>
                                         </div>
                                     }
                                 </div>
