@@ -241,6 +241,7 @@ function EntryEditor({isOpen, onClose, mode}) {
     }
 
     const handleSave = async () => {
+        if (loading == true) return
 
         const dateCreated = dayjs(selectedDate).format('YYYY-MM-DD HH:mm:ss');
         const lastEdited = dayjs(Date.now()).format('YYYY-MM-DD HH:mm:ss');
@@ -332,11 +333,11 @@ function EntryEditor({isOpen, onClose, mode}) {
     return (
         <>
             {loading &&
-            <div className='pointer-events-auto loading fixed rounded-xl inset-0 items-center justify-center flex bg-[var(--tomoi-white)]/50 z-100 text-2xl font-extrabold'>
+            <div className='pointer-events-none loading fixed rounded-xl inset-0 items-center justify-center flex bg-[var(--tomoi-white)]/50 z-100 text-2xl font-extrabold'>
                 <LoadingComponent></LoadingComponent>
             </div>}
             <Modal isOpen={isOpen} onClose={handleSave}>
-                <div className='relative min-h-[65vh] px-20 py-10 flex flex-col gap-2 justify-center items-center'>
+                <div className='relative min-h-[65vh] px-20 py-10 flex flex-col gap-2 justify-center w-[70vw] items-center'>
                     <div className='absolute top-5 right-5 text-xs italic text-[var(--tomoi-gray-d)]'>It will autosave when you close it.</div>
                     <textarea value={title} placeholder='Entry Title' className='resize-none outline-none overflow-hidden p-1 border-b-1 border-[var(--tomoi-gray)] text-5xl flex font-bold w-full field-sizing-content'
                     onChange={(e) => setTitle(e.target.value)}></textarea>

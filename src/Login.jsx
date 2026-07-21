@@ -8,6 +8,7 @@ import { GoogleLogin, googleLogout, useGoogleLogin } from '@react-oauth/google';
 import { jwtDecode } from 'jwt-decode';
 import axios from 'axios'
 import AccountLink from './components/AccountLink';
+import LoadingComponent from './components/LoadingComponent';
 
 function Login() {
   const navigate = useNavigate();
@@ -17,6 +18,7 @@ function Login() {
   const [rememberMe, setRememberMe] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
   const [isAccLinkOpen, setIsAccLinkOpen] = useState(false);
+  const [loginLoading, setLoginLoading] = useState(false);
 
   const googleLogin = useGoogleLogin({
         flow: "auth-code",
@@ -67,6 +69,7 @@ function Login() {
           return;
       } else {
           try {
+            setLoginLoading(true)
               const response = await fetch('http://localhost:8080/login-user', {
                   method: 'POST',
                   headers: {
@@ -87,6 +90,8 @@ function Login() {
               }
           } catch (error) {
               alert('Error logging in user');
+          } finally {
+              setLoginLoading(false)
           }
       }
   }
@@ -132,7 +137,16 @@ function Login() {
             </div>
 
             <div className='flex flex-col items-center justify-center w-full gap-2'>
-              <button className='w-full bg-[var(--tomoi-green)] hover:bg-[var(--tomoi-green-d)] rounded-full py-2 px-4 font-bold shadow-sm/30 outline-2 outline-dashed' type="submit">Login</button>
+              <button className='relative w-full bg-[var(--tomoi-green)] hover:bg-[var(--tomoi-green-d)] rounded-full py-2 px-4 font-bold shadow-sm/30 outline-2 outline-dashed' type="submit"
+              style={{"pointerEvents" : loginLoading ? "none" : "auto"}} >
+                {
+                    loginLoading &&
+                    <div className='loading absolute rounded-full inset-0 items-center justify-center flex bg-[var(--tomoi-green-d)] z-100 font-extrabold'>
+                        <LoadingComponent/>
+                    </div>
+                }
+                Login
+              </button>
               <div>- or -</div>
               <button onClick={googleLogin} className='flex flex-row gap-3 items-center justify-center w-full bg-[var(--tomoi-gray-l)] hover:bg-[var(--tomoi-gray-d)] rounded-full py-2 px-4 font-bold shadow-sm/30 outline-2 outline-dashed' type="button">
                 <Google className='' width={20} height={20} />
