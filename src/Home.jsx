@@ -71,13 +71,13 @@ function Home() {
     navigate('/journal')
   }
 
-  const { data: latestEntry = {}, isFetching: isLoadingLatestEntry, latestEntryError } = useQuery ({
+  const { data: latestEntry = {}, isPending: isLoadingLatestEntry, latestEntryError } = useQuery ({
     queryKey: ["latest-entry", user?.userID],
     queryFn: () => getLatestEntry(user),
     enabled: !!user
   })
 
-  const { data: lastActivityEntry = {}, isFetching: isLoadingLastActivityEntry, lastActivityEntryError } = useQuery ({
+  const { data: lastActivityEntry = {}, isPending: isLoadingLastActivityEntry, lastActivityEntryError } = useQuery ({
     queryKey: ["last-activity-entry", user?.userID],
     queryFn: () => getLastActivityEntry(user),
     enabled: !!user
@@ -129,18 +129,13 @@ const getLastActivityEntry = async(user) => {
     return {}
 }
 
-  useEffect (() => {
+useEffect (() => {
     const timer = setInterval (() => {
         setDailyEntryCountdown(calculateCountdown());
     }, 1000);
 
     return () => clearInterval(timer);
-  })
-
-  useEffect (() => {
-    getLatestEntry()
-    getLastActivityEntry()
-}, [])
+})
     
 
   return (

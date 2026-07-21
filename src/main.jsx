@@ -25,7 +25,13 @@ import ForgotPassword from './ForgotPassword.jsx'
 
 axios.defaults.headers.common['Content-Type'] = 'application/json';
 axios.defaults.withCredentials = true;
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions:{
+    queries:{
+      refetchOnWindowFocus: false
+    }
+  }
+});
 
 function DefaultRedirect() {
   const { user } = useAuth();
