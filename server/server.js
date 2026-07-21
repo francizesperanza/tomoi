@@ -882,6 +882,21 @@ app.put('/edit-entry', (req, res) => {
     });
 })
 
+app.put('/transfer-entry', (req, res) => {
+    const { postID, dateCreated} = req.body;
+    const idBuffer = Buffer.from(postID.data);
+
+    const query = 'UPDATE posts SET dateCreated = ? WHERE postID = ?';
+    db.query(query, [dateCreated, idBuffer], (err, result) => {
+        if (err) {
+            console.error('Error transferring entry:', err);
+            return res.status(500).json({ error: 'Error transferring entry' });
+        }
+
+        return res.status(200).json({ message: 'Entry successfully transferred!'})
+    });
+})
+
 app.put('/update-best-streak', (req, res) => {
     const {userID, bestStreak} = req.body;
 

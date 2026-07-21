@@ -24,7 +24,7 @@ function TomoiStepper({stepList, onChange, value}) {
 
     return (
     <>
-        <div className='flex flex-col items-center justify-center px-5 py-2 min-w-[8rem]'>
+        <div className='flex flex-col items-center justify-center px-5 py-2'>
             <button className='group w-full flex items-center justify-center' onClick={() => moveUp()}>
                 <CaretUpFill  width={20} height={20} className='group-hover:fill-[var(--tomoi-yellow)]'></CaretUpFill>
             </button>

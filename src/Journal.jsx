@@ -26,6 +26,7 @@ import localeData from "dayjs/plugin/localeData";
 import customParseFormat from "dayjs/plugin/customParseFormat";
 import SearchBar from './components/SearchBar';
 import EntryPagination from './components/EntryPagination';
+import TransferEntry from './components/TransferEntry';
 
 
 dayjs.extend(isLeapYear);
@@ -42,6 +43,8 @@ function Journal() {
     const [mode, setMode] = useState("new");
     const [sortAnchorEl, setSortAnchorEl] = useState(null);
     const [filterAnchorEl, setFilterAnchorEl] = useState(null);
+    const [isTransferEntryOpen, setIsTransferEntryOpen] = useState(false)
+    const [transferEntryDate, setTransferEntryDate] = useState(dayjs(new Date))
     const queryClient = useQueryClient();
     let allViewSelectedDate;
 
@@ -649,7 +652,7 @@ function Journal() {
                 }}
             >
                 <div className='flex w-[12vw] flex-col divide-y-1 divide-dashed'>
-                    <div onMouseEnter={onButtonHover} onMouseLeave={onButtonLeave} className='option px-4 py-2 hover:font-bold flex items-center justify-between overflow-hidden'>
+                    <div onMouseEnter={onButtonHover} onMouseLeave={onButtonLeave} onClick={() => {setIsTransferEntryOpen(true); closePopover()}} className='option px-4 py-2 hover:font-bold flex items-center justify-between overflow-hidden'>
                         Transfer Entry
                         <ArrowLeftRight className='icon'></ArrowLeftRight>
                     </div>
@@ -661,6 +664,7 @@ function Journal() {
             </Popover>
 
             <EntryEditor isOpen={isJEditorOpen} onClose={() => {setIsJEditorOpen(false)}} mode={mode}></EntryEditor>
+            <TransferEntry isOpen={isTransferEntryOpen} onClose={() => {setIsTransferEntryOpen(false)}} getTransferDate={setTransferEntryDate}></TransferEntry>
         </>
     )
 }

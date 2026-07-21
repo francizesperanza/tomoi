@@ -185,7 +185,7 @@ function TomoiCalendar() {
             horizontal: 'center',
             }}
         >
-            <div className='flex'>
+            <div className='grid items-center grid-cols-2 grid-cols-[7em_2fr]'>
                 <TomoiStepper stepList={monthSelection} onChange={setMonthStepperValue} value={monthStepperValue}></TomoiStepper>
                 <TomoiStepper stepList={yearSelection} onChange={setYearStepperValue} value={yearStepperValue}></TomoiStepper>
             </div>
