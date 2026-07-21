@@ -2,12 +2,14 @@ import React from "react"
 import { animate, stagger, createScope, set, random } from 'animejs'
 import { useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
+import { duration } from "dayjs";
 
 function TomoiHomeMenuBtn({icon, btnName, colSpan, rowSpan, bgColor, textColor, link, ...props}) {
     const root = useRef(null);
     const scope = useRef(null);
 
     var textSize, iconSize, marginX, marginY, colSpanTier, rowSpanTier;
+    const disabled = btnName == 'Habits' || btnName == 'Slambook' ? true : false
 
     if (colSpan == 2 && rowSpan == 2) {
         marginX = 2
@@ -43,6 +45,13 @@ function TomoiHomeMenuBtn({icon, btnName, colSpan, rowSpan, bgColor, textColor, 
     });
 
     const onButtonLeave = (e) => {
+
+        animate(e.currentTarget.querySelector('.disable-text'),{
+            opacity: [
+                {to: 0, duration: 100}
+            ]
+        });
+
         animate(e.currentTarget.querySelector('.btn-text'),{
             scale: [
                 { to: 1, duration: 100},
@@ -79,6 +88,13 @@ function TomoiHomeMenuBtn({icon, btnName, colSpan, rowSpan, bgColor, textColor, 
     }
 
     const onButtonHover = (e) => {
+
+        animate(e.currentTarget.querySelector('.disable-text'),{
+            opacity: [
+                {to: 1, duration: 100}
+            ]
+        });
+        
         animate(e.currentTarget.querySelector('.btn-text'),{
             scale: [
                 { to: 1.1, duration: 100},
@@ -124,18 +140,27 @@ function TomoiHomeMenuBtn({icon, btnName, colSpan, rowSpan, bgColor, textColor, 
 
     return (
     <>
-        <Link to={link} {...props} className={`w-full ${colSpanTier} ${rowSpanTier} shadow-md/40 relative inline-block rounded-xl overflow-hidden`}
+        <Link to={link} {...props} className={`w-full ${colSpanTier} ${rowSpanTier} shadow-md/40 btn-bg disabled relative inline-block rounded-xl overflow-hidden`}
                 style={{backgroundColor: bgColor}}
                 onMouseEnter={onButtonHover}
                 onMouseLeave={onButtonLeave}
+                onClick={(e) => {
+                    if (disabled) {
+                        e.preventDefault();
+                    }
+                }}
                 ref={root}>
+                {   
+                    disabled &&
+                    <div className="absolute opacity-0 disable-text z-100 w-full h-full flex items-center justify-center bg-[var(--tomoi-black)]/60 text-lg font-bold text-[var(--tomoi-white)]">Coming Soon</div>
+                }
                 <div data-text={btnName} className={`btn-text w-fit z-10 text-${textSize} alt-font stroked-overlap bottom-2 left-4`}
-                    style={{"--inside-color":`${textColor}`}}>{btnName}
+                    style={{"--inside-color": `${textColor}`}}>{btnName}
                 </div>
                 {btnIcon}
         </Link>
     </>
-    ) 
+    )
 }
 
 export default TomoiHomeMenuBtn
