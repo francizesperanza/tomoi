@@ -126,7 +126,7 @@ function SignUp() {
                     toast.success(data.message);
                     navigate('/login');
                 } else {
-                    toast.error(data.error);
+                    toast.error(data.message);
                 }
             } catch (error) {
                 console.error('Error signing up user:', error);

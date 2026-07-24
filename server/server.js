@@ -12,6 +12,7 @@ const bcrypt = require('bcrypt');
 const crypto = require('crypto');
 const nodemailer = require('nodemailer');
 const session = require('express-session');
+const { rateLimiter } = require('./middleware/rateLimiter');
 const { encrypt, decrypt } = require('./helper');
 const { fromBinaryUUID, toBinaryUUID, createBinaryUUID} = require("binary-uuid");
 const seedPosts = require('./scripts/testing');
@@ -41,6 +42,8 @@ const corsOptions = {
 
 app.use(express.json());
 app.use(cors(corsOptions));
+
+const authLimiter = rateLimiter(60*1000, 5)
 
 app.use(session({
     secret: process.env.SESSION_SECRET,
@@ -117,7 +120,7 @@ app.listen(8080, () => {
 
 // LOGIN AND SIGNUP ENDPOINTS
 
-app.post('/signup-user', (req, res) => {
+app.post('/signup-user', authLimiter, (req, res) => {
     const { username, email, password } = req.body;
     const hashedPassword = bcrypt.hashSync(password, saltRounds);
     const uuid = createBinaryUUID();
@@ -125,9 +128,9 @@ app.post('/signup-user', (req, res) => {
     db.query(query, [uuid.buffer, username, email, hashedPassword, 'local'], (err, result) => {
         if (err) {
             if (err.code === 'ER_DUP_ENTRY') {
-                return res.status(400).json({ error: 'Username or email already exists' });
+                return res.status(400).json({ message: 'Username or email already exists' });
             }
-            console.error('Error inserting user:', err);
+            
             res.status(500).json({ error: 'Error inserting user' });
         } else {
             res.status(201).json({ message: 'User created successfully' });
@@ -135,7 +138,7 @@ app.post('/signup-user', (req, res) => {
     });
 });
 
-app.put('/signup-link', (req, res) => {
+app.put('/signup-link', authLimiter, (req, res) => {
     const pendingUser = req.session.pendingGoogleUser
     const query = 'UPDATE users SET loginType = ?, googleID = ? WHERE email = ?';
     db.query(query, ['google', pendingUser.googleId, pendingUser.email], (err, result) => {
@@ -146,7 +149,6 @@ app.put('/signup-link', (req, res) => {
             const selectQuery = 'SELECT * FROM users WHERE email = ?';
             db.query(selectQuery, [pendingUser.email], (err, selRes) => {
                 if (err) {
-                    console.error('Error finding user:', err);
                     res.status(500).json({ error: 'Error finding user' });
                 } else {
                     req.session.pendingGoogleUser = null
@@ -158,7 +160,7 @@ app.put('/signup-link', (req, res) => {
     });
 });
 
-app.post('/google-signup-user', (req, res) => {
+app.post('/google-signup-user', authLimiter, (req, res) => {
     const { username} = req.body;
     const pendingUser = req.session.pendingGoogleUser
     const uuid = createBinaryUUID();
@@ -166,9 +168,9 @@ app.post('/google-signup-user', (req, res) => {
     db.query(query, [uuid.buffer, username, pendingUser.email, 'google', pendingUser.googleId, pendingUser.picture], (err, result) => {
         if (err) {
             if (err.code === 'ER_DUP_ENTRY') {
-                return res.status(400).json({ error: 'Username or email already exists' });
+                return res.status(400).json({  message: 'Username or email already exists' });
             }
-            console.error('Error inserting user:', err);
+
             res.status(500).json({ error: 'Error inserting user' });
         } else {
             req.session.user = { userID: uuid, username: username, email: pendingUser.email, profilePic: pendingUser.picture };
@@ -178,10 +180,10 @@ app.post('/google-signup-user', (req, res) => {
     });
 });
 
-app.post('/login-user', (req, res) => {
+app.post('/login-user', authLimiter, (req, res) => {
     const { username, password } = req.body;
     if (!usernameRegex.test(username) || !passwordRegex.test(password)) {
-        res.status(400).json({ error: 'Invalid username or password format' });
+        res.status(400).json({ message: 'Invalid username or password format' });
         return;
     }
 
@@ -199,17 +201,17 @@ app.post('/login-user', (req, res) => {
                         req.session.user = { userID: fromBinaryUUID(result[0].userID), username: result[0].username, email: result[0].email, profilePic: result[0].profilePic };
                         res.status(200).json({ message: 'Login successful', user: req.session.user});
                     } else {
-                        res.status(401).json({ error: 'Invalid username or password' });
+                        res.status(401).json({ message: 'Invalid username or password' });
                     }
                 });
             } else {
-                res.status(401).json({ error: 'Invalid username or password' });
+                res.status(401).json({ message: 'Invalid username or password' });
             }
         }
     });
 });
 
-app.post('/auth/google', async (req, res) => {
+app.post('/auth/google', authLimiter, async (req, res) => {
     const { code } = req.body;
 
     try {
@@ -253,7 +255,7 @@ app.post('/auth/google', async (req, res) => {
     
 });
 
-app.post('/forgot-password', async (req, res) => {
+app.post('/forgot-password', authLimiter, async (req, res) => {
     const { userEmail } = req.body;
 
     const query = 'SELECT * FROM users WHERE username = ? OR email = ?';
@@ -292,7 +294,7 @@ app.post('/forgot-password', async (req, res) => {
     
 });
 
-app.post('/verify-confirmation-code', async (req, res) => {
+app.post('/verify-confirmation-code', authLimiter, async (req, res) => {
     const { confirmationCode, userEmail } = req.body;
 
     // Find user
@@ -379,7 +381,7 @@ app.post('/verify-confirmation-code', async (req, res) => {
     });
 });
 
-app.put('/change-password', (req, res) => {
+app.put('/change-password', authLimiter, (req, res) => {
     const { password, userEmail } = req.body
     const hashedPassword = bcrypt.hashSync(password, saltRounds);
 

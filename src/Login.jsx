@@ -85,8 +85,7 @@ function Login() {
                   setUser(data.user);
                   navigate('/home');
               } else {
-                  toast.error(data.error);
-                  setErrorMessage(data.error);
+                  toast.error(data.message);
               }
           } catch (error) {
               alert('Error logging in user');
