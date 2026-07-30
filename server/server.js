@@ -10,6 +10,7 @@ dotenv.config({
 
 const bcrypt = require('bcrypt');
 const crypto = require('crypto');
+const helmet = require('helmet');
 const nodemailer = require('nodemailer');
 const session = require('express-session');
 const { rateLimiter } = require('./middleware/rateLimiter');
@@ -34,13 +35,24 @@ const client = new OAuth2Client({
 });
 const utapi = new UTApi();
 
+const allowedOrigins = [
+    "http://localhost:5173",
+    "https://tomoi.vercel.app"
+]
 
 const corsOptions = {
-    origin: 'http://localhost:5173',
-    credentials: true,
+    origin: (origin, callback) => {
+        if (!origin || allowedOrigins.includes(origin)) {
+            callback(null, true);
+        } else {
+            callback(new Error("Not allowed by CORS"));
+        }
+    },
+    credentials: true
 }
 
 app.use(express.json());
+app.use(helmet());
 app.use(cors(corsOptions));
 
 const authLimiter = rateLimiter(60*1000, 5)

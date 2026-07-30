@@ -10,5 +10,6 @@ export default defineConfig({
     react(),
     tailwindcss(),
     svgr()
-  ]
+  ],
+  base: process.env.VITE_BASE_PATH || "/"
 })
