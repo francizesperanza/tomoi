@@ -55,6 +55,8 @@ app.use(express.json());
 app.use(helmet());
 app.use(cors(corsOptions));
 
+app.set("trust proxy", 1);
+
 const authLimiter = rateLimiter(60*1000, 5)
 
 app.use(session({
