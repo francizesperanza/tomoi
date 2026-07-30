@@ -1,0 +1,828 @@
+import {useRef, useState, useEffect, useMemo} from 'react'
+import Modal from './Modal';
+import { useAuth } from './AuthProvider'
+import { useEditor, EditorContent, EditorContext, useEditorState } from '@tiptap/react'
+import { FloatingMenu, BubbleMenu } from '@tiptap/react/menus'
+import { Placeholder, Dropcursor } from '@tiptap/extensions'
+import { TextAlign } from '@tiptap/extension-text-align'
+import { TextStyleKit, Color } from '@tiptap/extension-text-style'
+import { toast} from 'react-hot-toast'
+import StarterKit from '@tiptap/starter-kit'
+import Image from "@tiptap/extension-image";
+import './EditorText.css'
+import { Arrow90degLeft, Arrow90degRight, BlockquoteLeft, CardImage, CaretUpFill, CodeSlash, EmojiNeutralFill, Eyedropper, Justify, ListOl, ListUl, TagFill, TextCenter, TextLeft, TextRight, TypeBold, TypeItalic, TypeStrikethrough, TypeUnderline, } from 'react-bootstrap-icons';
+import { Popover, Chip, Autocomplete, TextField} from '@mui/material';
+import dayjs, {Dayjs} from 'dayjs';
+import { useEntry } from './EntryProvider';
+import { useUploadThing } from '../utils/uploadthing';
+import axios from 'axios'
+import LoadingComponent from './LoadingComponent';
+import isToday from 'dayjs/plugin/isToday';
+import { useQueryClient } from '@tanstack/react-query';
+import useStreaks from './useStreaks'
+
+dayjs.extend(isToday);
+
+function EntryEditor({isOpen, onClose, mode}) {
+    const {user} = useAuth();
+    const {selectedEntry, selectedDate, refreshEntries} = useEntry();
+    const [colorPickerAnchor, setColorPickerAnchor] = useState(null);
+    const [highlightColorPickerAnchor, setHighlightColorPickerAnchor] = useState(null);
+    const [lastColor, setLastColor] = useState('var(--tomoi-black)');
+    const [lastHighlightColor, setLastHighlightColor] = useState('var(--tomoi-white)');
+    const [feeling, setFeeling] = useState('Neutral');
+    const [tags, setTags] = useState([]);
+    const [editorContent, setEditorContent] = useState('');
+    const [title, setTitle] = useState('');
+    const [loading, setLoading] = useState(false);
+    const { startUpload } = useUploadThing("imageUploader");
+    const { data: streakStats = null } = useStreaks(user.userID, dayjs().format('YYYY-MM-DD'));
+    const fileUploadRef = useRef(null)
+    const lastEditedDate = mode === 'new' ? dayjs(new Date()).format('MMMM DD, YYYY hh:mm A') : dayjs(selectedEntry?.lastEdited).format('MMMM DD, YYYY hh:mm A')
+    const queryClient = useQueryClient();
+
+    const handleFeelingChange = (event) => {
+        setFeeling(event.target.value);
+    };
+
+    const color_popover_open = Boolean(colorPickerAnchor);
+    const color_popover_id = color_popover_open ? 'color-popover' : undefined;
+    const highlight_color_popover_open = Boolean(highlightColorPickerAnchor);
+    const highlight_color_popover_id = highlight_color_popover_open ? 'color-highlight-popover' : undefined;
+
+    const extensions = useMemo(() => [
+        StarterKit, 
+        TextStyleKit,
+        Image.configure({
+            resize: {
+                enabled: true,
+                directions: ['top', 'bottom', 'left', 'right']
+            }
+        }),
+        TextAlign.configure({
+            types: ['heading', 'paragraph'],
+        }),
+        Placeholder.configure({
+            placeholder: 'Start writing here!',
+        })
+    ], []);
+
+    const editor = useEditor({
+        extensions: extensions,
+        content: '',
+        immediatelyRender: false,
+        autofocus: true,
+        editable: true,
+        editorProps: {
+            attributes: {
+            class: 'focus:outline-none w-full mt-5 min-h-[55vh] mb-5',
+            },
+        },
+        onCreate({ editor }) {
+            editor.chain().setColor('var(--tomoi-black)').run()
+        },
+        onUpdate({ editor }) {
+            setEditorContent(editor.getJSON());
+        }
+    })
+
+    const colorArray = [
+        {name: 'Black', color: 'var(--tomoi-black)', highlight: 'var(--tomoi-gray-d)'},
+        {name: 'White', color: 'var(--tomoi-white)', highlight: 'var(--tomoi-white)'},
+        {name: 'Gray', color: 'var(--tomoi-gray)', highlight: 'var(--tomoi-gray-l)'},
+        {name: 'Red', color: 'var(--tomoi-red)', highlight: 'var(--tomoi-red-l)'},
+        {name: 'Orange', color: 'var(--tomoi-orange)', highlight: 'var(--tomoi-orange-l)'},
+        {name: 'Yellow', color: 'var(--tomoi-yellow)', highlight: 'var(--tomoi-yellow-l)'},
+        {name: 'Green', color: 'var(--tomoi-green)', highlight: 'var(--tomoi-green-l)'},
+        {name: 'Cyan', color: 'var(--tomoi-cyan)', highlight: 'var(--tomoi-cyan-l)'},
+        {name: 'Blue', color: 'var(--tomoi-blue)', highlight: 'var(--tomoi-blue-l)'},
+        {name: 'Navy', color: 'var(--tomoi-navy)', highlight: 'var(--tomoi-navy-l)'},
+        {name: 'Violet', color: 'var(--tomoi-violet)', highlight: 'var(--tomoi-violet-l)'},
+        {name: 'Pink', color: 'var(--tomoi-pink)', highlight: 'var(--tomoi-pink-l)'},
+        {name: 'Magenta', color: 'var(--tomoi-magenta)', highlight: 'var(--tomoi-magenta-l)'},
+    ]
+
+    const feelingArray = [
+        {name: 'Happy', color: 'var(--tomoi-yellow-l)'},
+        {name: 'Sad', color: 'var(--tomoi-blue-l)'},
+        {name: 'Angry', color: 'var(--tomoi-red-l)'},
+        {name: 'Excited', color: 'var(--tomoi-orange-l)'},
+        {name: 'Anxious', color: 'var(--tomoi-violet-l)'},
+        {name: 'Neutral', color: 'var(--tomoi-gray-l)'},
+        {name: 'Reflective', color: 'var(--tomoi-cyan-l)'},
+        {name: 'Peaceful', color: 'var(--tomoi-green-l)'},
+        {name: 'Lovestruck', color: 'var(--tomoi-pink-l)'},
+    ]
+
+    const providerValue = useMemo(() => ({ editor }), [editor])
+
+    useEffect(() => {
+        if (!editor) return;
+
+        if (selectedEntry){
+            editor.commands.setContent(JSON.parse(selectedEntry.content))
+            setTitle(selectedEntry.title)
+            setFeeling(selectedEntry.feeling)
+            if (selectedEntry.tags.length > 0)
+                setTags(selectedEntry.tags)
+            else
+                setTags([])
+        } else {
+            editor.commands.setContent("")
+            setTitle("")
+            setFeeling("Neutral")
+            setTags([])
+        }
+    }, [selectedEntry, mode])
+
+    const editorState = useEditorState({
+        editor,
+        selector: ctx => {
+            if (!ctx.editor) {
+                return {
+                    color: 'var(--tomoi-black)',
+                    isPurple: false,
+                    isRed: false,
+                    isOrange: false,
+                    isYellow: false,
+                    isBlue: false,
+                    isTeal: false,
+                    isGreen: false,
+                }
+            }
+
+            const color = ctx.editor.getAttributes('textStyle').color || 'var(--tomoi-black)'
+
+            return {
+                // Text formatting
+                isBold: ctx.editor.isActive('bold') ?? false,
+                canBold: ctx.editor.can().chain().toggleBold().run() ?? false,
+                isItalic: ctx.editor.isActive('italic') ?? false,
+                canItalic: ctx.editor.can().chain().toggleItalic().run() ?? false,
+                isUnderline: ctx.editor.isActive('underline') ?? false,
+                canUnderline: ctx.editor.can().chain().toggleUnderline().run() ?? false,
+                isStrike: ctx.editor.isActive('strike') ?? false,
+                canStrike: ctx.editor.can().chain().toggleStrike().run() ?? false,
+                isCode: ctx.editor.isActive('code') ?? false,
+                canCode: ctx.editor.can().chain().toggleCode().run() ?? false,
+                canClearMarks: ctx.editor.can().chain().unsetAllMarks().run() ?? false,
+                isTextLeftAlign: ctx.editor.isActive({textAlign : 'left'}) ?? false,
+                isTextCenterAlign: ctx.editor.isActive({textAlign : 'center'}) ?? false,
+                isTextRightAlign: ctx.editor.isActive({textAlign : 'right'}) ?? false,
+                isTextJustifyAlign: ctx.editor.isActive({textAlign : 'justify'}) ?? false,
+
+                // Block types
+                isParagraph: ctx.editor.isActive('paragraph') ?? false,
+                isHeading1: ctx.editor.isActive('heading', { level: 1 }) ?? false,
+                isHeading2: ctx.editor.isActive('heading', { level: 2 }) ?? false,
+                isHeading3: ctx.editor.isActive('heading', { level: 3 }) ?? false,
+
+                // Lists and blocks
+                isBulletList: ctx.editor.isActive('bulletList') ?? false,
+                isOrderedList: ctx.editor.isActive('orderedList') ?? false,
+                isCodeBlock: ctx.editor.isActive('codeBlock') ?? false,
+                isBlockquote: ctx.editor.isActive('blockquote') ?? false,
+
+                // History
+                canUndo: ctx.editor.can().chain().undo().run() ?? false,
+                canRedo: ctx.editor.can().chain().redo().run() ?? false,
+            }
+        },
+    })
+
+    if (!editor) {
+        return null
+    }
+
+    const openColorPopover = (e) => {
+        setColorPickerAnchor(e.currentTarget);
+    }
+
+    const openHighlightColorPopover = (e) => {
+        setHighlightColorPickerAnchor(e.currentTarget);
+    }
+    
+    const closeColorPopover = () => {
+        setColorPickerAnchor(null);
+    }
+
+    const closeHighlightColorPopover = () => {
+        setHighlightColorPickerAnchor(null);
+    }
+
+    const handleStreaks = async (writtenOnTime, author) => {
+        const bs = streakStats?.bestStreak
+        const cs = streakStats?.currentStreak
+
+        if (writtenOnTime) {
+            console.log(cs+1," > ", bs)
+            toast((cs + 1) + "-day streak", {
+                icon: '🔥'
+            })
+            if ((cs + 1) > bs) {
+                toast("New best writing streak!", {
+                    icon: '🏆'
+                })
+                const API_URL = import.meta.env.VITE_API_URL
+                const response = await axios.put(`${API_URL}/update-best-streak`, {
+                    userID: author,
+                    bestStreak: cs + 1
+                })
+            }
+        }
+        queryClient.setQueryData(['streakStats', author], (oldData) => {
+            if (!oldData) return oldData;
+            return {
+                bestStreak: !writtenOnTime ? oldData.bestStreak : Math.max(oldData.bestStreak, oldData.currentStreak + 1),
+                currentStreak: !writtenOnTime ? oldData.currentStreak : oldData.currentStreak + 1
+            };
+        })
+
+    }
+
+    const handleSave = async () => {
+        if (loading == true) return
+
+        const dateCreated = dayjs(selectedDate).format('YYYY-MM-DD HH:mm:ss');
+        const lastEdited = dayjs(Date.now()).format('YYYY-MM-DD HH:mm:ss');
+        const author = user.userID
+        const content =  JSON.stringify(editorContent)
+        const contentText = editor.getText()
+        const writtenOnTime = dayjs(selectedDate).isToday();
+        const finalTitle = title.length < 1 ? "Untitled" : title; 
+
+        if (mode === 'new'){    
+            try {
+                setLoading(true)
+                const API_URL = import.meta.env.VITE_API_URL
+                const response = await axios.post(`${API_URL}/create-entry`, {
+                    title: finalTitle,
+                    author,
+                    content,
+                    contentText,
+                    feeling,
+                    dateCreated,
+                    lastEdited,
+                    tags,
+                    writtenOnTime
+                })
+                const data = await response.data;
+                handleStreaks(writtenOnTime, author);
+
+                toast.success(data.message);
+                queryClient.invalidateQueries({queryKey: ['streakStats']})
+                queryClient.invalidateQueries({queryKey: ['entries']})
+                await refreshEntries();
+            } catch (err) {
+                console.error('Error creating entry:', err);
+            }
+        } else if (mode === 'edit') {
+            if (
+                selectedEntry.title === title &&
+                selectedEntry.content === content &&
+                selectedEntry.feeling === feeling &&
+                JSON.stringify(selectedEntry.tags) === JSON.stringify(tags)
+            ) {
+                return onClose();
+                console.log(JSON.stringify(selectedEntry.tags),JSON.stringify(tags))
+            }
+            
+            try {
+                setLoading(true)
+                const API_URL = import.meta.env.VITE_API_URL
+                const response = await axios.put(`${API_URL}/edit-entry`, {
+                    postID: selectedEntry.postID,
+                    title: title,
+                    contentID: selectedEntry.contentID,
+                    content: content,
+                    contentText: contentText,
+                    feeling: feeling,
+                    lastEdited: lastEdited,
+                    tags: tags
+                })
+                const data = await response.data;
+                toast.success(data.message);
+                queryClient.invalidateQueries({queryKey: ['entries']})
+                await refreshEntries();
+            } catch (err) {
+                console.error('Error updating entry:', err);
+            }
+        }
+        setLoading(false)
+        onClose();
+    }
+
+    const handleImageUpload = async (file) => {
+        const result = await startUpload([file]);
+
+        if (!result?.length) return;
+
+        editor
+            ?.chain()
+            .focus()
+            .setImage({
+            src: result[0].ufsUrl,
+            })
+            .run();
+    };
+
+    const triggerFileUpload = () => {
+        fileUploadRef.current?.click()
+    }
+
+    return (
+        <>
+            {loading &&
+            <div className='pointer-events-none loading fixed rounded-xl inset-0 items-center justify-center flex bg-[var(--tomoi-white)]/50 z-100 text-2xl font-extrabold'>
+                <LoadingComponent></LoadingComponent>
+            </div>}
+            <Modal isOpen={isOpen} onClose={handleSave}>
+                <div className='relative min-h-[65vh] px-20 py-10 flex flex-col gap-2 justify-center w-[70vw] items-center'>
+                    <div className='absolute top-5 right-5 text-xs italic text-[var(--tomoi-gray-d)]'>It will autosave when you close it.</div>
+                    <textarea value={title} placeholder='Entry Title' className='resize-none outline-none overflow-hidden p-1 border-b-1 border-[var(--tomoi-gray)] text-5xl flex font-bold w-full field-sizing-content'
+                    onChange={(e) => setTitle(e.target.value)}></textarea>
+                    <div className='italic text-[var(--tomoi-gray-d)] flex justify-between w-full'>
+                        <div>Last edited {lastEditedDate}</div>
+                    </div>
+                    <div className='text-[var(--tomoi-black)] flex w-full field-sizing-content items-center'>
+                        <div className='flex w-full bg-[var(--tomoi-gray-l)] px-3 py-2 rounded-lg border-1 border-dashed items-start justify-between items-stretch'>
+                            <div className='flex gap-3 px-3 py-1 rounded-lg w-[50%] items-center'>
+                                <div className='flex items-center gap-3'>
+                                    <EmojiNeutralFill width={'1em'} height={'1em'}></EmojiNeutralFill>
+                                    Feeling
+                                </div>
+                                <select
+                                    value={feeling}
+                                    onChange={handleFeelingChange}
+                                    className={'text-center py-1 w-full rounded-xl flex items-center justify-center min-h-[2em] border-1 appearance-none'}
+                                    style={{
+                                        'backgroundColor': feelingArray.find(f => f.name === feeling)?.color || 'var(--tomoi-gray-l)',
+                                    }}
+                                >
+                                    {feelingArray.map(({name}, index)=> (
+                                        <option key={index} className='bg-white' value={name}>
+                                            {name}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div className='flex gap-3 px-3 py-1 rounded-lg items-center w-[50%]'>
+                                <div className='flex items-center gap-3'>
+                                    <TagFill width={'1em'} height={'1em'}></TagFill>
+                                    Tags
+                                </div>
+                                <Autocomplete
+                                    multiple
+                                    fullWidth
+                                    freeSolo
+                                    value={tags}
+                                    onChange={(event, newValue) => {
+                                        setTags(newValue);
+                                    }}
+                                    limitTags={5}
+                                    options={[]}
+                                    sx={{
+                                        "& .MuiOutlinedInput-root": {
+                                            backgroundColor: 'var(--tomoi-white)',
+                                            fontFamily: 'Kulim Park',
+                                            borderRadius: '20px',
+                                            padding: '10px 20px',
+                                            outline: 'none',
+                                            "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+                                                borderColor: "var(--tomoi-black)",
+                                                borderWidth: "2px",
+                                            },
+                                        }
+                                    }}
+                                    renderValue={(value, getTagProps) =>
+                                        value.map((option, index) => {
+                                            
+                                            const {key, ...chipProps} = getTagProps({ index })
+                                            return (
+                                                <Chip key={key} label={option} {...chipProps} 
+                                                sx={{
+                                                    backgroundColor: 'var(--tomoi-gray-l)',
+                                                    fontFamily: 'Kulim Park',
+                                                    borderRadius: '0px',
+                                                    border: '1px dashed var(--tomoi-black)',
+                                                    fontSize: '.875em',
+                                                }}/>
+                                            )
+                                        })
+                                    }
+                                    renderInput={(params) => (
+                                        <TextField {...params} fullWidth placeholder="Type and press enter" 
+                                        sx={{
+                                            "& input": {
+                                                fontFamily: 'Kulim Park',
+                                            }
+                                        }}/>
+                                    )}
+                                />
+                            </div>
+                        </div>
+                    </div>
+                    <EditorContext.Provider value={providerValue}>
+                        <div className='shadow-sm/40 z-10 sticky -top-15 flex w-fit bg-[var(--tomoi-white)] divide-x-1 divide-dashed justify-center items-center rounded-lg border-1 border-dashed items-stretch'>
+                            <button
+                            onClick={() => editor.chain().undo().run()}
+                            disabled={!editorState.canUndo}
+                            className={'styling-btn rounded-l-lg ' + (!editorState.canUndo ? 'styling-btn-disabled' : '')}
+                            >
+                            <Arrow90degLeft width={'.8em'} height={'.8em'}></Arrow90degLeft>
+                            </button>
+                            <button
+                            onClick={() => editor.chain().redo().run()}
+                            disabled={!editorState.canRedo}
+                            className={'styling-btn ' + (!editorState.canRedo ? 'styling-btn-disabled' : '')}
+                            >
+                            <Arrow90degRight width={'.8em'} height={'.8em'}></Arrow90degRight>
+                            </button>
+
+                            <button
+                            onClick={() => editor.chain().focus().setTextAlign('left').run()}
+                            disabled={editorState.isTextLeftAlign}
+                            className={'styling-btn ' + (editorState.isTextLeftAlign ? 'active' : '')}
+                            >
+                            <TextLeft></TextLeft>
+                            </button>
+
+                            <button
+                            onClick={() => editor.chain().focus().setTextAlign('center').run()}
+                            disabled={editorState.isTextCenterAlign}
+                            className={'styling-btn ' + (editorState.isTextCenterAlign ? 'active' : '')}
+                            >
+                            <TextCenter></TextCenter>
+                            </button>
+
+                            <button
+                            onClick={() => editor.chain().focus().setTextAlign('right').run()}
+                            disabled={editorState.isTextRightAlign}
+                            className={'styling-btn ' + (editorState.isTextRightAlign ? 'active' : '')}
+                            >
+                            <TextRight></TextRight>
+                            </button>
+
+                            <button
+                            onClick={() => editor.chain().focus().setTextAlign('justify').run()}
+                            disabled={editorState.isTextJustifyAlign}
+                            className={'styling-btn ' + (editorState.isTextJustifyAlign ? 'active' : '')}
+                            >
+                            <Justify></Justify>
+                            </button>
+
+                            <button
+                            onClick={() => editor.chain().focus().toggleBold().run()}
+                            disabled={!editorState.canBold}
+                            className={'styling-btn ' + (editorState.isBold ? 'active' : '')}
+                            >
+                            <TypeBold></TypeBold>
+                            </button>
+                            <button
+                            onClick={() => editor.chain().focus().toggleItalic().run()}
+                            disabled={!editorState.canItalic}
+                            className={'styling-btn ' + (editorState.isItalic ? 'active' : '')}
+                            >
+                            <TypeItalic></TypeItalic>
+                            </button>
+                            <button
+                            onClick={() => editor.chain().focus().toggleUnderline().run()}
+                            disabled={!editorState.canUnderline}
+                            className={'styling-btn ' + (editorState.isUnderline ? 'active' : '')}
+                            >
+                            <TypeUnderline></TypeUnderline>
+                            </button>
+                            <button
+                            onClick={() => editor.chain().focus().toggleStrike().run()}
+                            disabled={!editorState.canStrike}
+                            className={'styling-btn ' + (editorState.isStrike ? 'active' : '')}
+                            >
+                            <TypeStrikethrough></TypeStrikethrough>
+                            </button>
+
+                            <div className='flex divide-x-1 divide-[var(--tomoi-gray-d)] divide-dashed items-stretch'>
+                                <button
+                                onClick={(e) => editor.chain().focus().setColor(lastColor).run()}
+                                className={'styling-btn leading-[1em]'}
+                                >
+                                A
+                                <div className='min-h-1 min-w-5' style={{
+                                    'backgroundColor' : lastColor,
+                                }}></div>
+                                </button>
+                                <button className='styling-btn' onClick={(e) => openColorPopover(e)}>
+                                    <CaretUpFill width={'.8em'} height={'.8em'}></CaretUpFill>
+                                </button>
+                            </div>
+
+                            <div className='flex divide-x-1 divide-[var(--tomoi-gray-d)] divide-dashed items-stretch'>
+                                <button
+                                onClick={(e) => editor.chain().focus().setBackgroundColor(lastHighlightColor).run()}
+                                className={'styling-btn leading-[1em]'}
+                                >
+                                    <div className='min-h-1 min-w-5' style={{
+                                        'backgroundColor' : lastHighlightColor,
+                                    }}>A</div>
+                                </button>
+                                <button className='styling-btn' onClick={(e) => openHighlightColorPopover(e)}>
+                                    <CaretUpFill width={'.8em'} height={'.8em'}></CaretUpFill>
+                                </button>
+                            </div>
+                            <button
+                            onClick={() => editor.chain().focus().setHeading({ level: 1 }).run()}
+                            className={'styling-btn font-bold'}
+                            >
+                            h1
+                            </button>
+                            <button
+                            onClick={() => editor.chain().focus().setHeading({ level: 2 }).run()}
+                            className={'styling-btn font-semibold'}
+                            >
+                            h2
+                            </button>
+                            <button
+                            onClick={() => editor.chain().focus().setHeading({ level: 3 }).run()}
+                            className={'styling-btn'}
+                            >
+                            h3
+                            </button>
+                            <button
+                            onClick={() => editor.chain().focus().toggleBulletList('bulletList', 'listItem').run()}
+                            className={'styling-btn'}
+                            >
+                            <ListUl width={'1.5em'} height={'1.5em'}></ListUl>
+                            </button>
+                            <button
+                            onClick={() => editor.chain().focus().toggleOrderedList('orderedList', 'listItem').run()}
+                            className={'styling-btn'}
+                            >
+                            <ListOl width={'1.5em'} height={'1.5em'}></ListOl>
+                            </button>
+                            <button
+                            onClick={() => editor.chain().focus().setCodeBlock().run()}
+                            className={'styling-btn'}
+                            >
+                            <CodeSlash width={'1.2em'} height={'1.2em'}></CodeSlash>
+                            </button>
+                            <button
+                            onClick={() => editor.chain().focus().setBlockquote().run()}
+                            className={'styling-btn'}
+                            >
+                            <BlockquoteLeft width={'1.2em'} height={'1.2em'}></BlockquoteLeft>
+                            </button>
+                            <button
+                            onClick={() => editor.chain().focus().setHorizontalRule().run()}
+                            className={'styling-btn text-center'}
+                            >
+                            ———
+                            </button>
+                            <button className='styling-btn rounded-r-lg' onClick={() => triggerFileUpload()}>
+                                <CardImage></CardImage>
+                                <input
+                                ref={fileUploadRef}
+                                className='hidden'
+                                type="file"
+                                accept="image/*"
+                                onChange={(e) =>
+                                    handleImageUpload(e.target.files[0])
+                                }/>
+                            </button>
+                        </div>
+                        <EditorContent className='prose max-w-none w-full' editor={editor} />
+                        <FloatingMenu editor={editor}>
+                            <div className="z-20 bg-white shadow-sm/40 rounded-lg border-1 border-dashed text-md flex divide-x-1 divide-dashed items-center justify-center h-[2em] items-stretch">
+                                
+                                <button
+                                onClick={() => editor.chain().focus().setHeading({ level: 1 }).run()}
+                                className={'styling-btn rounded-l-lg font-bold'}
+                                >
+                                h1
+                                </button>
+                                <button
+                                onClick={() => editor.chain().focus().setHeading({ level: 2 }).run()}
+                                className={'styling-btn font-semibold'}
+                                >
+                                h2
+                                </button>
+                                <button
+                                onClick={() => editor.chain().focus().setHeading({ level: 3 }).run()}
+                                className={'styling-btn '}
+                                >
+                                h3
+                                </button>
+                                <button
+                                onClick={() => editor.chain().focus().toggleBulletList('bulletList', 'listItem').run()}
+                                className={'styling-btn '}
+                                >
+                                <ListUl width={'1.5em'} height={'1.5em'}></ListUl>
+                                </button>
+                                <button
+                                onClick={() => editor.chain().focus().toggleOrderedList('orderedList', 'listItem').run()}
+                                className={'styling-btn '}
+                                >
+                                <ListOl width={'1.5em'} height={'1.5em'}></ListOl>
+                                </button>
+                                <button
+                                onClick={() => editor.chain().focus().setCodeBlock().run()}
+                                className={'styling-btn '}
+                                >
+                                <CodeSlash width={'1.2em'} height={'1.2em'}></CodeSlash>
+                                </button>
+                                <button
+                                onClick={() => editor.chain().focus().setBlockquote().run()}
+                                className={'styling-btn '}
+                                >
+                                <BlockquoteLeft width={'1.2em'} height={'1.2em'}></BlockquoteLeft>
+                                </button>
+                                <button
+                                onClick={() => editor.chain().focus().setHorizontalRule().run()}
+                                className={'styling-btn rounded-r-lg text-center'}
+                                >
+                                ———
+                                </button>
+                            </div>
+                        </FloatingMenu>
+                        <BubbleMenu editor={editor}
+                        tippyOptions={{
+                            hideOnClick: false,
+                            duration: 300,
+                            interactive: true,
+                        }}>
+                            <div className="z-20 bg-white shadow-sm/40 rounded-lg border-1 border-dashed text-md flex divide-x-1 divide-dashed items-center justify-center h-[2em] items-stretch">
+                                <button
+                                onClick={() => editor.chain().focus().toggleBold().run()}
+                                disabled={!editorState.canBold}
+                                className={'styling-btn rounded-l-lg font-bold ' + (editorState.isBold ? 'active' : '')}
+                                >
+                                <TypeBold></TypeBold>
+                                </button>
+                                <button
+                                onClick={() => editor.chain().focus().toggleItalic().run()}
+                                disabled={!editorState.canItalic}
+                                className={'styling-btn font-semibold ' + (editorState.isItalic ? 'active' : '')}
+                                >
+                                <TypeItalic></TypeItalic>
+                                </button>
+                                <button
+                                onClick={() => editor.chain().focus().toggleUnderline().run()}
+                                disabled={!editorState.canUnderline}
+                                className={'styling-btn ' + (editorState.isUnderline ? 'active' : '')}
+                                >
+                                <TypeUnderline></TypeUnderline>
+                                </button>
+                                <button
+                                onClick={() => editor.chain().focus().toggleStrike().run()}
+                                disabled={!editorState.canStrike}
+                                className={'styling-btn ' + (editorState.isStrike ? 'active' : '')}
+                                >
+                                <TypeStrikethrough></TypeStrikethrough>
+                                </button>
+
+                                <div className='flex divide-x-1 divide-[var(--tomoi-gray-d)] divide-dashed items-stretch'>
+                                    <button
+                                    onClick={(e) => editor.chain().focus().setColor(lastColor).run()}
+                                    className={'styling-btn leading-[1em]'}
+                                    >
+                                    A
+                                    <div className='min-h-1 min-w-5' style={{
+                                        'backgroundColor' : lastColor,
+                                    }}></div>
+                                    </button>
+                                    <button className='styling-btn ' onClick={(e) => openColorPopover(e)}>
+                                        <CaretUpFill width={'.8em'} height={'.8em'}></CaretUpFill>
+                                    </button>
+                                </div>
+
+                                <div className='flex divide-x-1 divide-[var(--tomoi-gray-d)] divide-dashed items-stretch'>
+                                    <button
+                                    onClick={(e) => editor.chain().focus().setBackgroundColor(lastHighlightColor).run()}
+                                    className={'styling-btn leading-[1em]'}
+                                    >
+                                        <div className='min-h-1 min-w-5' style={{
+                                            'backgroundColor' : lastHighlightColor,
+                                        }}>A</div>
+                                    </button>
+                                    <button className='styling-btn ' onClick={(e) => openHighlightColorPopover(e)}>
+                                        <CaretUpFill width={'.8em'} height={'.8em'}></CaretUpFill>
+                                    </button>
+                                </div>
+
+                                <button
+                                onClick={() => editor.chain().focus().toggleBulletList('bulletList', 'listItem').run()}
+                                className={'styling-btn '}
+                                >
+                                <ListUl width={'1.5em'} height={'1.5em'}></ListUl>
+                                </button>
+                                <button
+                                onClick={() => editor.chain().focus().toggleOrderedList('orderedList', 'listItem').run()}
+                                className={'styling-btn '}
+                                >
+                                <ListOl width={'1.5em'} height={'1.5em'}></ListOl>
+                                </button>
+                                <button
+                                onClick={() => editor.chain().focus().toggleCodeBlock().run()}
+                                className={'styling-btn '}
+                                >
+                                <CodeSlash width={'1.2em'} height={'1.2em'}></CodeSlash>
+                                </button>
+                                <button
+                                onClick={() => editor.chain().focus().toggleBlockquote().run()}
+                                className={'styling-btn rounded-r-lg'}
+                                >
+                                <BlockquoteLeft width={'1.2em'} height={'1.2em'}></BlockquoteLeft>
+                                </button>
+                            </div>
+                        </BubbleMenu>
+                    </EditorContext.Provider>
+                </div>
+            </Modal>
+            <Popover
+                id={color_popover_id}
+                open={color_popover_open}
+                anchorEl={colorPickerAnchor}
+                onClose={closeColorPopover}
+                elevation={2}
+                disableScrollLock
+                anchorOrigin={{
+                vertical: 'top',
+                horizontal: 'left',
+                }}
+                transformOrigin={{
+                vertical: 'bottom',
+                horizontal: 'top',
+                }}
+                slotProps={{
+                    paper: {
+                        sx: {
+                            backgroundColor: 'var(--tomoi-white)',
+                            border: '1px dashed black',
+                            borderRadius: '8px',
+                            mt: -1,
+                            display: 'flex',
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                        },
+                    },
+                }}
+            >
+                <div className='inline-flex flex-row flex-wrap items-center justify-center px-2 py-1 gap-1'>
+                    {colorArray.map(({name, color},index)=> (
+                        <button
+                            key={`text-color-${name}`}
+                            onClick={() => {editor.chain().focus().setColor(color).run(); setLastColor(color); closeColorPopover(); editor.chain().focus().run()} }
+                            className={`w-5 h-5 cursor-pointer rounded-sm outline-1 outline-dashed hover:outline-2`}
+                            style={{ backgroundColor: color }}
+                            data-testid={`set${name}`}
+                        >
+                        </button>
+                    ))}
+                </div>
+            </Popover>
+
+            <Popover
+                id={highlight_color_popover_id}
+                open={highlight_color_popover_open}
+                anchorEl={highlightColorPickerAnchor}
+                onClose={closeHighlightColorPopover}
+                elevation={2}
+                disableScrollLock
+                anchorOrigin={{
+                vertical: 'top',
+                horizontal: 'left',
+                }}
+                transformOrigin={{
+                vertical: 'bottom',
+                horizontal: 'top',
+                }}
+                slotProps={{
+                    paper: {
+                        sx: {
+                            backgroundColor: 'var(--tomoi-white)',
+                            border: '1px dashed black',
+                            borderRadius: '8px',
+                            mt: -1,
+                            display: 'flex',
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                        },
+                    },
+                }}
+            >
+                <div className='inline-flex flex-row flex-wrap items-center justify-center px-2 py-1 gap-1'>
+                    {colorArray.map(({name, highlight},index)=> (
+                        <button
+                            key={`highlight-color-${name}`}
+                            onClick={() => {editor.chain().focus().setBackgroundColor(highlight).run(); setLastHighlightColor(highlight); closeHighlightColorPopover(); editor.chain().focus().run()} }
+                            className={`w-5 h-5 cursor-pointer rounded-sm outline-1 outline-dashed hover:outline-2`}
+                            style={{ backgroundColor: highlight }}
+                            data-testid={`set${name}`}
+                        >
+                        </button>
+                    ))}
+                </div>
+            </Popover>
+        </>
+    );
+}
+
+export default EntryEditor;
