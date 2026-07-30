@@ -215,7 +215,6 @@ function EntryEditor({isOpen, onClose, mode}) {
         const cs = streakStats?.currentStreak
 
         if (writtenOnTime) {
-            console.log(cs+1," > ", bs)
             toast((cs + 1) + "-day streak", {
                 icon: '🔥'
             })
@@ -284,7 +283,6 @@ function EntryEditor({isOpen, onClose, mode}) {
                 JSON.stringify(selectedEntry.tags) === JSON.stringify(tags)
             ) {
                 return onClose();
-                console.log(JSON.stringify(selectedEntry.tags),JSON.stringify(tags))
             }
             
             try {

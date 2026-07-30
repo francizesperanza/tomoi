@@ -19,7 +19,7 @@ function AccountLink({isOpen, onClose}) {
             }, {
                 withCredentials: true
             })
-            const data = response.data
+            const data = await response.data
             setUser(data.user)
             toast.success(data.message)
             navigate('/')

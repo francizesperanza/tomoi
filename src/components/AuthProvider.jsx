@@ -15,7 +15,6 @@ function AuthProvider ({children}) {
                 })
                 const data = response.data;
                 
-                console.log(data)
                 setUser(data);
             } catch (err) {
                 if (err.response?.status === 401) {

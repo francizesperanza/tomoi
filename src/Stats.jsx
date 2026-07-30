@@ -312,7 +312,6 @@ function Stats() {
                     userID
                 }
             })
-            console.log(response.data)
             return response.data;
 
         } catch (err) {
@@ -336,7 +335,6 @@ function Stats() {
                     userID
                 }
             })
-            console.log(response.data)
             return {
                 total_words: response.data.total_words,
                 avg_words: response.data.avg_words,
@@ -417,8 +415,6 @@ function Stats() {
                     userID
                 }
             })
-
-            console.log(response.data)
             return response.data;
 
         } catch (err) {
@@ -725,7 +721,7 @@ function Stats() {
                     Object.entries(filterOptionsMap).map(([key, value], index) => {
                         return (
                             <div key={index} className='relative group overflow-visible'>
-                                <div onClick={() => console.log('mike')} className='text-sm option leading-none px-4 py-2 hover:font-bold flex items-center justify-between overflow-visible'>
+                                <div className='text-sm option leading-none px-4 py-2 hover:font-bold flex items-center justify-between overflow-visible'>
                                     {value}
                                 </div>
                             </div>

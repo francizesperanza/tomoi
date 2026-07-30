@@ -60,11 +60,21 @@ function GoogleSignUp() {
 
     const checkUsernameAvailability = async (username) => {
         try {
-            const response = await fetch(`http://localhost:8080/check-username?username=${username}`);
-            const data = await response.json();
+            const API_URL = import.meta.env.VITE_API_URL
+            const response = await axios.get(`${API_URL}/check-username`, {
+                params:{
+                    username
+                }
+            }, {
+                withCredentials: true
+            })
+            const data = await response.data;
             setUsernameAvailable(data.isAvailable);
-        } catch (error) {
-            console.error('Error checking username availability:', error);
+        } catch (err) {
+            if (err.response)
+                toast.error(err.response.data.message);
+            else
+                console.error('Error checking username availability:', err);
             setUsernameAvailable(false);
         }
     }

@@ -61,7 +61,6 @@ function Home() {
   
   const writeTodayEntry = () => {
     setSelectedDate(dayjs(Date.now()).startOf('day'))
-    console.log(dayjs().isToday())
     setView('calendar')
     navigate('/journal')
   }
@@ -97,7 +96,6 @@ function Home() {
                 userID
             }
         })
-        console.log(response.data)
         return response.data
     } catch (err) {
         console.error('Error getting latest entry:', err);
@@ -120,7 +118,6 @@ const getLastActivityEntry = async(user) => {
                 userID
             }
         })
-        console.log(response.data)
         return response.data;
     } catch (err) {
         console.error('Error getting last activity entry:', err);

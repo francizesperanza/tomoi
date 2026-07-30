@@ -46,7 +46,7 @@ function SignUp() {
                 }, {
                     withCredentials: true
                 })
-                const data = response.data
+                const data = await response.data
                 const status = response.data.status
 
                 if (status === 'local')
@@ -114,45 +114,66 @@ function SignUp() {
             return;
         } else {
             try {
-                const response = await fetch('http://localhost:8080/signup-user', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ username, email, password }),
-                });
-                const data = await response.json();
-                if (response.ok) {
+                const API_URL = import.meta.env.VITE_API_URL
+                const response = await axios.post(`${API_URL}/signup-user`, {
+                        username,
+                        email,
+                        password
+                }, {
+                    withCredentials: true
+                })
+                const data = await response.data;
+                if (response.status == 200) {
                     toast.success(data.message);
                     navigate('/login');
-                } else {
-                    toast.error(data.message);
                 }
-            } catch (error) {
-                console.error('Error signing up user:', error);
-                alert('Error signing up user');
+            } catch (err) {
+                if (err.response)
+                    toast.error(err.response.data.message);
+                else
+                    console.error('Error signing up user:', err);
             }
         }
     }
 
     const checkUsernameAvailability = async (username) => {
         try {
-            const response = await fetch(`http://localhost:8080/check-username?username=${username}`);
-            const data = await response.json();
+            const API_URL = import.meta.env.VITE_API_URL
+            const response = await axios.get(`${API_URL}/check-username`, {
+                params:{
+                    username
+                }
+            }, {
+                withCredentials: true
+            })
+            const data = await response.data;
             setUsernameAvailable(data.isAvailable);
-        } catch (error) {
-            console.error('Error checking username availability:', error);
+        } catch (err) {
+            if (err.response)
+                toast.error(err.response.data.message);
+            else
+                console.error('Error checking username availability: ', err);
             setUsernameAvailable(false);
         }
     }
 
     const checkEmailAvailability = async (email) => {
         try {
-            const response = await fetch(`http://localhost:8080/check-email?email=${email}`);
-            const data = await response.json();
+            const API_URL = import.meta.env.VITE_API_URL
+            const response = await axios.get(`${API_URL}/check-email`, {
+                params:{
+                    email
+                }
+            }, {
+                withCredentials: true
+            })
+            const data = await response.data;
             setEmailAvailable(data.isAvailable);
-        } catch (error) {
-            console.error('Error checking email availability:', error);
+        } catch (err) {
+            if (err.response)
+                toast.error(err.response.data.message);
+            else
+                console.error('Error checking email availability:', err);
             setEmailAvailable(false);
         }
     }

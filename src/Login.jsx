@@ -32,7 +32,7 @@ function Login() {
             }, {
                 withCredentials: true
             })
-            const data = response.data
+            const data = await response.data
             const status = response.data.status
             if (status === 'local') {
               return setIsAccLinkOpen(true)
@@ -49,12 +49,10 @@ function Login() {
 
           } catch (err) {
 
-            console.error(err);
-
-            if (err.response) {
-                console.error(err.response.status);
-                console.error(err.response.data);
-            }
+            if (err.response)
+                toast.error(err.response.data.message);
+            else
+                console.error('Error logging in user:', err);
           }
             
         },
@@ -70,33 +68,29 @@ function Login() {
       } else {
           try {
             setLoginLoading(true)
-              const response = await fetch('http://localhost:8080/login-user', {
-                  method: 'POST',
-                  headers: {
-                      'Content-Type': 'application/json',
-                  },
-                  credentials: 'include',
-                  body: JSON.stringify({ username, password }),
-              });
-              const data = await response.json();
-              if (response.ok) {
+              const API_URL = import.meta.env.VITE_API_URL
+              const response = await axios.post(`${API_URL}/login-user`, {
+                    username,
+                    password
+              }, {
+                  withCredentials: true
+              })
+              const data = await response.data;
+              if (response.status == 200) {
                   toast.success(data.message);
                   setErrorMessage('');
                   setUser(data.user);
                   navigate('/home');
-              } else {
-                  toast.error(data.message);
-              }
-          } catch (error) {
-              alert('Error logging in user');
+              } 
+          } catch (err) {
+              if (err.response)
+                toast.error(err.response.data.message);
+              else
+                  console.error('Error logging in user:', err);
           } finally {
               setLoginLoading(false)
           }
       }
-  }
-
-  const handleGoogleSuccess = (e) => {
-
   }
 
   return (

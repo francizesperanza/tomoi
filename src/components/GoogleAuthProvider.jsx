@@ -13,9 +13,8 @@ function GoogleAuthProvider ({children}) {
                 const response  = await axios.get(`${API_URL}/google-session-check`, {
                     withCredentials: true
                 })
-                const data = response.data;
+                const data = await response.data;
                 
-                console.log(data)
                 setPendingUser(data);
             } catch (err) {
                 if (err.response?.status === 401) {

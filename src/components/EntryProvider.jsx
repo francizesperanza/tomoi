@@ -102,8 +102,6 @@ function EntryProvider ({children}) {
     useEffect(() => {
         const startDate = selectedDate.startOf('day').format('YYYY-MM-DD');
         const entry = entrySet.find(entry => entry.dateCreated.split(' ')[0] === startDate)
-        console.log(startDate)
-        console.log(entrySet)
         setSelectedEntry(entry ?? null)
     }, [selectedDate, entrySet])
 

@@ -58,13 +58,13 @@ app.use(cors(corsOptions));
 app.set("trust proxy", 1);
 
 const authLimiter = rateLimiter(60*1000, 5)
-
+const isProduction = process.env.NODE_ENV === "production";
 app.use(session({
     secret: process.env.SESSION_SECRET,
     resave: false,
     rolling: true,
     saveUninitialized: false,
-    cookie: { httpOnly: true, secure: true, sameSite: "lax", maxAge: 7 * 24 * 60 * 60 * 1000 }
+    cookie: { httpOnly: true, secure: isProduction, sameSite: isProduction ? "none" : "lax", maxAge: 7 * 24 * 60 * 60 * 1000 }
 }));
 
 app.use(
@@ -147,7 +147,7 @@ app.post('/signup-user', authLimiter, (req, res) => {
             
             res.status(500).json({ error: 'Error inserting user' });
         } else {
-            res.status(201).json({ message: 'User created successfully' });
+            res.status(200).json({ message: 'User created successfully' });
         }
     });
 });
@@ -201,8 +201,6 @@ app.post('/login-user', authLimiter, (req, res) => {
         return;
     }  
 
-    console.log("BEFORE:", req.session);
-
     const query = 'SELECT * FROM users WHERE username = ?';
 
     db.query(query, [username], (err, result) => {
@@ -225,8 +223,6 @@ app.post('/login-user', authLimiter, (req, res) => {
             }
         }
     });
-
-    console.log("AFTER:", req.session);
 });
 
 app.post('/auth/google', authLimiter, async (req, res) => {
@@ -254,11 +250,13 @@ app.post('/auth/google', authLimiter, async (req, res) => {
             if (err)
                 return res.status(500).json({ error: 'Error logging in' });
             else {
-                console.log(ceRes)
-                if (ceRes.length == 0)
+                if (ceRes.length == 0) {
                     return res.json({ status: 'no-acc' });
+                }
+                    
                 if (ceRes[0].loginType == 'local')
                     return res.json({ status: 'local' });
+                
                 if (ceRes[0].loginType == 'google') {
                     req.session.pendingGoogleUser = null
                     req.session.user = { userID: fromBinaryUUID(ceRes[0].userID), username: ceRes[0].username, email: ceRes[0].email, profilePic: ceRes[0].profilePic };
@@ -293,7 +291,6 @@ app.post('/forgot-password', authLimiter, async (req, res) => {
                                 ON DUPLICATE KEY UPDATE code = VALUES(code), expiresAt = VALUES(expiresAt), attempts = 0;`
                 db.query(saveReqQuery, [result[0].email, code, expiresAt], (err, iRes) => {
                     if (err) {
-                        console.log(err)
                         return res.status(500).json({ error: 'Error saving reset request' });
                     }
 
@@ -554,7 +551,6 @@ app.put('/change-profile-picture', (req, res) => {
     
     // Delete previous picture
     if (currentProfilePic) {
-        console.log(currentProfilePic)
         const key = currentProfilePic.split("/f/")[1];
 
         utapi.deleteFiles([
@@ -576,7 +572,6 @@ app.put('/change-profile-picture', (req, res) => {
 app.put('/delete-profile-picture', (req, res) => {
     const { userID, currentProfilePic} = req.body;
 
-    console.log(currentProfilePic)
     const key = currentProfilePic.split("/f/")[1];
 
     utapi.deleteFiles([
@@ -1069,7 +1064,6 @@ app.get('/get-all-entries', (req, res) => {
             console.error('Error fetching all entries', err);
             res.status(500).json({ error: 'Error fetching all entries' });
         } else {
-            console.log(result)
             res.json(result);
         }
     });

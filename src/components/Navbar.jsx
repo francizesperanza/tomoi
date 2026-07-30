@@ -116,7 +116,6 @@ function Navbar() {
         console.error('Error logging out:', err);
     } finally {
         setUser(null)
-        console.log(user)
         navigate('/login')
     }
   }
