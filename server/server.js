@@ -199,7 +199,9 @@ app.post('/login-user', authLimiter, (req, res) => {
     if (!usernameRegex.test(username) || !passwordRegex.test(password)) {
         res.status(400).json({ message: 'Invalid username or password format' });
         return;
-    }
+    }  
+
+    console.log("BEFORE:", req.session);
 
     const query = 'SELECT * FROM users WHERE username = ?';
 
@@ -223,6 +225,8 @@ app.post('/login-user', authLimiter, (req, res) => {
             }
         }
     });
+
+    console.log("AFTER:", req.session);
 });
 
 app.post('/auth/google', authLimiter, async (req, res) => {
